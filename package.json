@@ -1,0 +1,30 @@
+{
+  "name": "mydigitalstore",
+  "version": "1.0.0",
+  "description": "AI Digital Business eBook - High Converting Landing Page and Checkout with Razorpay Integration for EC2",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "razorpay",
+    "digital-products",
+    "ebook-store",
+    "landing-page",
+    "ec2",
+    "express"
+  ],
+  "author": "Digital Store",
+  "license": "ISC",
+  "dependencies": {
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "razorpay": "^2.9.4"
+  }
+}

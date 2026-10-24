@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>सुरक्षित चेकआउट | AI डिजिटल बिज़नेस ई-बुक (₹199)</title>
+  <meta name="description" content="AI की मदद से अपना पहला डिजिटल बिज़नेस ई-बुक और 4 फ्री बोनसेस प्राप्त करने के लिए सुरक्षित चेकआउट पेज। 100% सुरक्षित Razorpay पेमेंट।">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://yourdomain.com/checkout">
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2226%22 font-size=%2224%22>🔒</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background-color: var(--bg-primary);">
+
+  <!-- Simple Focused Header -->
+  <header class="checkout-header">
+    <div class="container nav-wrap">
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">🤖</div>
+        <div class="logo-text">
+          <span class="logo-title">DigitalGuru AI</span>
+          <span class="logo-subtitle">सुरक्षित चेकआउट</span>
+        </div>
+      </a>
+      <div style="display:flex; align-items:center; gap:8px; color:#10b981; font-weight:700; font-size:0.9rem;">
+        <span>🔒 256-Bit SSL एन्क्रिप्टेड भुगतान</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sandbox Mode Notification Banner -->
+  <div id="mode-indicator" style="display:none; background:#1e1b4b; border-bottom:1px solid #4f46e5; color:#c7d2fe; text-align:center; padding:8px; font-size:0.85rem;">
+    💡 <strong>डेमो / टेस्ट मोड सक्रिय है:</strong> आप बिना किसी असली पैसे के पूरे भुगतान और डाउनलोड फ्लो का लाइव परीक्षण कर सकते हैं!
+  </div>
+
+  <!-- Checkout Main Container -->
+  <div class="container">
+    <div class="checkout-grid">
+
+      <!-- Left Column: Customer Form & Payment Trigger -->
+      <div class="checkout-card">
+        <div style="margin-bottom: 24px;">
+          <h2 style="font-size: 1.6rem; margin-bottom: 6px;">ग्राहक विवरण भरें</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">भुगतान के तुरंत बाद ई-बुक आपके ईमेल और व्हाट्सएप पर भेज दी जाएगी।</p>
+        </div>
+
+        <!-- Error Message Alert -->
+        <div id="checkout-error" style="display:none; background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; color:#fca5a5; padding:12px 16px; border-radius:8px; margin-bottom:20px; font-size:0.9rem;">
+        </div>
+
+        <form id="checkout-form">
+          
+          <div class="form-group">
+            <label class="form-label" for="cust-name">आपका पूरा नाम (Full Name) <span class="req">*</span></label>
+            <input type="text" id="cust-name" class="form-input" placeholder="जैसे: राहुल शर्मा" required autocomplete="name">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cust-email">ईमेल पता (Email Address) <span class="req">*</span></label>
+            <input type="email" id="cust-email" class="form-input" placeholder="rahul@example.com" required autocomplete="email">
+            <small style="color: var(--text-dim); font-size:0.78rem; display:block; margin-top:4px;">ई-बुक डाउनलोड लिंक इसी ईमेल पर भेजा जाएगा।</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cust-phone">व्हाट्सएप / मोबाइल नंबर (WhatsApp Number) <span class="req">*</span></label>
+            <input type="tel" id="cust-phone" class="form-input" placeholder="9876543210" required autocomplete="tel" maxlength="10">
+            <small style="color: var(--text-dim); font-size:0.78rem; display:block; margin-top:4px;">व्हाट्सएप पर तुरंत पीडीएफ और बोनस लिंक प्राप्त करने के लिए।</small>
+          </div>
+
+          <!-- Order Bump (Value Booster) -->
+          <div class="order-bump-box" onclick="document.getElementById('bump-checkbox').click();">
+            <div class="bump-check-wrap">
+              <input type="checkbox" id="bump-checkbox" class="bump-checkbox" onclick="event.stopPropagation();">
+              <div>
+                <div class="bump-title">⚡ हाँ! मुझे 500+ मास्टर AI प्रॉम्प्ट वॉल्ट भी जोड़ना है (सिर्फ ₹99 में)</div>
+                <div class="bump-desc">इस स्पेशल ऐड-ऑन में आपको सोशल मीडिया मार्केटिंग, सेल्स फनल, और ऑटोमेशन के 500+ प्रीमियम रेडीमेड प्रॉम्प्ट्स मिलेंगे। (सामान्य मूल्य: ₹1,499)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Razorpay Pay Button -->
+          <button type="submit" id="pay-submit-btn" class="btn btn-gold btn-block btn-pulse" style="font-size:1.15rem; padding: 18px 24px;">
+            <span id="pay-btn-text">🔒 अभी भुगतान करें - ₹199 (100% सुरक्षित)</span>
+          </button>
+
+          <!-- Security Badges Below Pay Button -->
+          <div class="razorpay-badge-box">
+            <p style="font-weight:700; color:#cbd5e1; margin-bottom:8px;">स्वीकृत भुगतान विकल्प (Powered by Razorpay):</p>
+            <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap; font-size:1.3rem;">
+              <span title="Google Pay">🟢 GPay</span>
+              <span title="PhonePe">🟣 PhonePe</span>
+              <span title="Paytm">🔵 Paytm</span>
+              <span title="UPI">⚡ BHIM UPI</span>
+              <span title="Cards">💳 Cards / NetBanking</span>
+            </div>
+            <p style="margin-top:10px; font-size:0.75rem; color:var(--text-dim);">
+              आरबीआई अधिकृत 100% सुरक्षित भुगतान गेटवे। आपकी कोई भी बैंकिंग जानकारी स्टोर नहीं की जाती।
+            </p>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Right Column: Order Summary Preview -->
+      <div class="checkout-card">
+        <h3 style="font-size: 1.3rem; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+          ऑर्डर सारांश (Order Summary)
+        </h3>
+
+        <!-- Product Details -->
+        <div class="summary-product-item">
+          <img src="/assets/ebook-cover.jpg" alt="AI ई-बुक" class="summary-thumb">
+          <div class="summary-details">
+            <h3>AI की मदद से अपना पहला डिजिटल बिज़नेस</h3>
+            <p class="summary-meta">30 पेज की पूरी गाइड + 4 मुफ़्त बोनस बंडल</p>
+            <div style="margin-top: 6px; font-size: 0.82rem; color: #10b981; font-weight: 700;">
+              ✓ लाइफटाइम एक्सेस और तुरंत डिलीवरी
+            </div>
+          </div>
+        </div>
+
+        <!-- Inclusions Checklist -->
+        <div style="background: rgba(0,0,0,0.25); padding: 16px; border-radius: var(--radius-md); margin-bottom: 24px; font-size: 0.85rem;">
+          <div style="font-weight: 700; margin-bottom: 8px; color: #fbbf24;">पैकेज में क्या-क्या शामिल है:</div>
+          <ul style="list-style:none; display:flex; flex-direction:column; gap:6px; color:#cbd5e1;">
+            <li>✓ डिजिटल बिज़नेस 30 पेज कम्पलीट ई-बुक (PDF)</li>
+            <li>✓ 100+ रेडीमेड ChatGPT डिजिटल प्रोडक्ट प्रॉम्प्ट्स (FREE)</li>
+            <li>✓ Canva रेडी-टू-यूज़ टेम्प्लेट्स और मॉकअप्स (FREE)</li>
+            <li>✓ 30-डे लॉन्च वर्कशीट और ट्रैकर चेकलिस्ट (FREE)</li>
+            <li>✓ VIP व्हाट्सएप सपोर्ट कम्युनिटी एक्सेस (FREE)</li>
+          </ul>
+        </div>
+
+        <!-- Price Breakdown Table -->
+        <table class="summary-table">
+          <tr>
+            <td>मूल उत्पाद मूल्य (MRP):</td>
+            <td class="val"><strike style="color:var(--text-dim);">₹999</strike></td>
+          </tr>
+          <tr>
+            <td>मुफ़्त बोनस मूल्य (4 Bonues):</td>
+            <td class="val"><strike style="color:var(--text-dim);">₹2,999</strike></td>
+          </tr>
+          <tr>
+            <td>स्पेशल डिस्काउंट (Launch Discount):</td>
+            <td class="val" style="color: #10b981;">- ₹3,799</td>
+          </tr>
+          <tr id="summary-bump-row" style="display:none;">
+            <td>500+ मास्टर AI प्रॉम्प्ट वॉल्ट:</td>
+            <td class="val" style="color: #fbbf24;">+ ₹99</td>
+          </tr>
+          <tr class="total-row">
+            <td>कुल देय राशि (Total Amount):</td>
+            <td class="val" id="summary-total-price">₹199</td>
+          </tr>
+        </table>
+
+        <!-- Guarantee Pill -->
+        <div style="display:flex; align-items:center; gap:12px; background:rgba(16, 185, 129, 0.08); border:1px solid rgba(16, 185, 129, 0.3); padding:14px; border-radius:var(--radius-md);">
+          <div style="font-size:1.8rem;">🛡️</div>
+          <div style="font-size:0.82rem; color:#cbd5e1; line-height:1.4;">
+            <strong style="color:#34d399; display:block;">100% संतोष गारंटी</strong>
+            भुगतान के 5 सेकंड के अंदर स्क्रीन पर पीडीएफ डाउनलोड लिंक उपलब्ध हो जाएगा।
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Demo Mode Payment Simulation Modal -->
+  <div id="demo-payment-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#11131f; border:1px solid #4f46e5; border-radius:16px; max-width:440px; width:100%; padding:28px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+      <div style="font-size:3rem; margin-bottom:12px;">💳</div>
+      <h3 style="font-size:1.4rem; margin-bottom:8px;">Razorpay टेस्ट सिमुलेशन</h3>
+      <p style="font-size:0.9rem; color:#94a3b8; margin-bottom:20px; line-height:1.5;">
+        आपका सर्वर वर्तमान में <strong>डेमो/टेस्ट मोड</strong> में चल रहा है। यह मॉडल आपको बिना किसी वास्तविक पैसे के पूरे पेमेंट सत्यापन और डाउनलोड पेज का अनुभव कराता है।
+      </p>
+      <div style="display:flex; gap:12px;">
+        <button id="demo-confirm-btn" class="btn btn-gold btn-block" style="padding:12px;">
+          ✓ सफल भुगतान सिमुलेट करें
+        </button>
+        <button id="demo-cancel-btn" class="btn btn-block" style="padding:12px; background:rgba(255,255,255,0.1); color:#fff;">
+          रद्द करें
+        </button>
+      </div>
+      <p style="font-size:0.75rem; color:#64748b; margin-top:16px;">
+        नोट: असली Razorpay API Keys (.env फ़ाइल में) जोड़ने पर यह अपने आप असली Razorpay पॉपअप में बदल जाएगा।
+      </p>
+    </div>
+  </div>
+
+  <!-- Official Razorpay Checkout Script -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <!-- Analytics & Event Tracking -->
+  <script src="/js/tracking.js"></script>
+  <!-- Checkout Interaction Script -->
+  <script src="/js/checkout.js"></script>
+</body>
+</html>
