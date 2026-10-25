@@ -1,9 +1,9 @@
 /* ==========================================================
    AI Digital Business - Premium Design System & Stylesheet
    Modern Glassmorphism, Luxury Dark Theme & High Conversion UI
+   v2.0 - Fonts loaded via HTML <link>, not @import (faster)
    ========================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+/* NOTE: Google Fonts are loaded via <link rel="preconnect"> in HTML head */
 
 :root {
   /* Color Palette */
@@ -59,15 +59,15 @@ html {
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', 'Hind', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Hind', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-main);
-  line-height: 1.6;
+  line-height: 1.65;
   overflow-x: hidden;
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 85% 40%, rgba(217, 70, 239, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 50% 80%, rgba(245, 158, 11, 0.06) 0%, transparent 50%);
+    radial-gradient(ellipse at 10% 0%, rgba(99, 102, 241, 0.16) 0%, transparent 45%),
+    radial-gradient(ellipse at 90% 30%, rgba(217, 70, 239, 0.10) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 85%, rgba(245, 158, 11, 0.07) 0%, transparent 55%);
   background-attachment: fixed;
   background-repeat: no-repeat;
 }
@@ -108,12 +108,14 @@ h1, h2, h3, h4 {
 
 /* Header & Announcement Bar */
 .announcement-bar {
-  background: linear-gradient(90deg, #d97706 0%, #b45309 50%, #d97706 100%);
+  background: linear-gradient(90deg, #b45309 0%, #d97706 40%, #ea580c 80%, #b45309 100%);
+  background-size: 200% 100%;
+  animation: shimmer-bar 4s linear infinite;
   color: #fff;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  padding: 8px 16px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,7 +123,12 @@ h1, h2, h3, h4 {
   letter-spacing: 0.02em;
   position: relative;
   z-index: 50;
-  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.3);
+  box-shadow: 0 2px 15px rgba(217, 119, 6, 0.4);
+}
+
+@keyframes shimmer-bar {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .announcement-bar .badge-live {
@@ -1442,4 +1449,76 @@ h1, h2, h3, h4 {
   .badge-top-right, .badge-bottom-left {
     display: none; /* prevent overflow on small mobile */
   }
+  .live-toast {
+    bottom: 80px; /* above mobile sticky bar */
+  }
+  .guarantee-box {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  .py-section {
+    padding: 60px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title { font-size: 1.75rem; }
+  .container { padding: 0 16px; }
+  .nav-actions .header-support-btn { display: none; }
+  .price-current { font-size: 2.4rem; }
+  .section-title { font-size: 1.55rem; }
+  .checkout-card { padding: 20px 16px; }
+  .footer-bottom { flex-direction: column; text-align: center; }
+  .cta-banner { padding: 36px 20px; }
+  .cta-banner h2 { font-size: 1.5rem; }
+}
+
+/* ==========================================================
+   SCROLL FADE-UP ANIMATION
+   ========================================================== */
+.fade-up {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger delays for grid children */
+.steps-grid .step-card:nth-child(1) { transition-delay: 0.05s; }
+.steps-grid .step-card:nth-child(2) { transition-delay: 0.10s; }
+.steps-grid .step-card:nth-child(3) { transition-delay: 0.15s; }
+.steps-grid .step-card:nth-child(4) { transition-delay: 0.20s; }
+.steps-grid .step-card:nth-child(5) { transition-delay: 0.25s; }
+.bonuses-wrap .bonus-box:nth-child(1) { transition-delay: 0.05s; }
+.bonuses-wrap .bonus-box:nth-child(2) { transition-delay: 0.12s; }
+.bonuses-wrap .bonus-box:nth-child(3) { transition-delay: 0.19s; }
+.bonuses-wrap .bonus-box:nth-child(4) { transition-delay: 0.26s; }
+
+/* ==========================================================
+   PREMIUM SCROLLBAR
+   ========================================================== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #4f46e5, #7c3aed);
+}
+
+/* Text Selection */
+::selection {
+  background: rgba(99, 102, 241, 0.35);
+  color: #fff;
+}
+
+/* Smooth header shadow on scroll */
+.main-header.scrolled {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.55);
 }

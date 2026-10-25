@@ -32,8 +32,12 @@
   <meta name="twitter:description" content="बिना किसी कोडिंग या टेक्निकल स्किल के AI से घर बैठे कमाई शुरू करें। 100+ प्रॉम्प्ट्स व टेम्पलेट्स फ्री!">
   <meta name="twitter:image" content="https://yourdomain.com/assets/ebook-cover.jpg">
 
-  <!-- Favicon & Stylesheet -->
+  <!-- Favicon, Fonts & Stylesheet -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2226%22 font-size=%2224%22>🚀</text></svg>">
+  <!-- Google Fonts (preconnect first for speed) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="/css/style.css">
 
   <!-- Schema.org JSON-LD Structured Data for Rich Search Results -->
@@ -694,6 +698,23 @@
       if (window.StoreTracking) {
         window.StoreTracking.trackViewContent('AI Digital Business Guide', 199);
       }
+
+      // Scroll fade-up animation
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(el => {
+          if (el.isIntersecting) { el.target.classList.add('visible'); }
+        });
+      }, { threshold: 0.12 });
+      document.querySelectorAll('.step-card, .module-card, .audience-card, .bonus-box, .review-card').forEach(el => {
+        el.classList.add('fade-up');
+        observer.observe(el);
+      });
+
+      // Header scroll shadow
+      const header = document.querySelector('.main-header');
+      window.addEventListener('scroll', () => {
+        header.classList.toggle('scrolled', window.scrollY > 10);
+      }, { passive: true });
     });
   </script>
 </body>
