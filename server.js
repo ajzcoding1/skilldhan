@@ -75,6 +75,7 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
+<<<<<<< HEAD
 // CORS Configuration with strict domain validation (prevents prefix spoofing)
 app.use(cors({
   origin: (origin, callback) => {
@@ -93,6 +94,18 @@ app.use(cors({
       }
     } catch {
       // Invalid URL format
+=======
+// CORS Configuration
+app.use(cors({
+  origin: (origin, callback) => {
+    // In development or when no origin (like mobile/same origin), allow
+    if (!origin || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    // In production, match SITE_URL
+    if (origin.startsWith(SITE_URL)) {
+      return callback(null, true);
+>>>>>>> origin/main
     }
     return callback(new Error('CORS block by security policy'));
   },
@@ -165,8 +178,13 @@ function saveOrder(order) {
     } else {
       orders.push({ ...order, createdAt: new Date().toISOString() });
     }
+<<<<<<< HEAD
     // Atomic file write using unique temporary file to prevent collision on high concurrency
     const tempFile = path.join(__dirname, `.orders_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.tmp`);
+=======
+    // Atomic file write using temporary file to prevent corruption on crash
+    const tempFile = `${DB_FILE}.${Date.now()}.tmp`;
+>>>>>>> origin/main
     fs.writeFileSync(tempFile, JSON.stringify(orders, null, 2), 'utf8');
     fs.renameSync(tempFile, DB_FILE);
     return true;
@@ -213,9 +231,15 @@ const PRODUCT_CONFIG = {
     price: parseInt(process.env.ORDER_BUMP_PRICE || '99', 10)
   },
   support: {
+<<<<<<< HEAD
     email: process.env.SUPPORT_EMAIL || 'support@skilldhan.shop',
     whatsapp: process.env.SUPPORT_WHATSAPP || '+919876543210',
     storeName: process.env.STORE_NAME || 'Skilldhan'
+=======
+    email: process.env.SUPPORT_EMAIL || 'support@mydigitalstore.com',
+    whatsapp: process.env.SUPPORT_WHATSAPP || '+919876543210',
+    storeName: process.env.STORE_NAME || 'DigitalGuru AI'
+>>>>>>> origin/main
   },
   tracking: {
     gaMeasurementId: (process.env.GA_MEASUREMENT_ID || '').trim(),
@@ -376,6 +400,7 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
 
     let isValid = false;
 
+<<<<<<< HEAD
     if (isDemoMode) {
       // Sandbox / Demo mode: allow simulated order verification
       isValid = razorpay_order_id.startsWith('order_demo_');
@@ -386,6 +411,11 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
         return res.status(403).json({ success: false, error: 'सुरक्षा प्रतिबंध: लाइव मोड में डेमो ऑर्डर स्वीकार्य नहीं हैं।' });
       }
 
+=======
+    if (isDemoMode || razorpay_order_id.startsWith('order_demo_')) {
+      isValid = true;
+    } else {
+>>>>>>> origin/main
       // Timing-safe HMAC SHA-256 verification
       if (!razorpay_signature || typeof razorpay_signature !== 'string') {
         return res.status(400).json({ success: false, error: 'सिग्नेचर अनुपलब्ध है।' });
@@ -486,17 +516,24 @@ app.get('/api/download', downloadLimiter, (req, res) => {
     return res.status(403).send('अमान्य या समाप्त सुरक्षा टोकन। कृपया सपोर्ट से संपर्क करें।');
   }
 
+<<<<<<< HEAD
   // Verify expiry time (72 hours limit)
+=======
+  // Verify expiry time
+>>>>>>> origin/main
   if (order.tokenExpiry && Date.now() > order.tokenExpiry) {
     return res.status(403).send('यह डाउनलोड लिंक 72 घंटे बाद समाप्त हो चुका है। नया लिंक प्राप्त करने के लिए सपोर्ट पर लिखें।');
   }
 
+<<<<<<< HEAD
   // Enforce maximum download limit (Anti-piracy / anti-sharing)
   const maxAllowed = order.maxDownloads || 10;
   if ((order.downloadCount || 0) >= maxAllowed) {
     return res.status(403).send(`अधिकतम डाउनलोड सीमा (${maxAllowed} बार) पार हो चुकी है। नया लिंक प्राप्त करने के लिए कृपया सपोर्ट से संपर्क करें।`);
   }
 
+=======
+>>>>>>> origin/main
   // Increment download counter
   order.downloadCount = (order.downloadCount || 0) + 1;
   saveOrder(order);
@@ -529,6 +566,7 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
     return res.status(403).send('बोनस डाउनलोड अनुमति नहीं है।');
   }
 
+<<<<<<< HEAD
   // Verify expiry time (72 hours limit)
   if (order.tokenExpiry && Date.now() > order.tokenExpiry) {
     return res.status(403).send('यह बोनस डाउनलोड लिंक 72 घंटे बाद समाप्त हो चुका है।');
@@ -543,6 +581,8 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
   order.bonusDownloadCount = (order.bonusDownloadCount || 0) + 1;
   saveOrder(order);
 
+=======
+>>>>>>> origin/main
   const filePath = path.join(__dirname, 'downloads', '100-AI-Prompts-Vault.pdf');
   if (fs.existsSync(filePath)) {
     res.setHeader('Content-Type', 'application/pdf');
@@ -555,6 +595,7 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
   }
 });
 
+<<<<<<< HEAD
 // Timing-safe comparison to prevent side-channel timing attacks
 function safeCompareAdminKey(providedKey, expectedKey) {
   if (typeof providedKey !== 'string' || typeof expectedKey !== 'string') return false;
@@ -567,11 +608,14 @@ function safeCompareAdminKey(providedKey, expectedKey) {
   return crypto.timingSafeEqual(provBuf, expBuf);
 }
 
+=======
+>>>>>>> origin/main
 // 6. PROTECTED Admin Orders Endpoint (Requires Secret Admin Key)
 app.get('/api/orders', (req, res) => {
   const authHeader = req.headers.authorization || '';
   const queryKey = req.query.key || '';
 
+<<<<<<< HEAD
   let clientKey = '';
   if (authHeader.startsWith('Bearer ')) {
     clientKey = authHeader.slice(7);
@@ -585,6 +629,15 @@ app.get('/api/orders', (req, res) => {
     // Return 403 Forbidden to protect customer PII data
     return res.status(403).json({
       error: 'सुरक्षा प्रतिबंध: अनधिकृत पहुंच (Unauthorized). व्यवस्थापक कुंजी अमान्य है।'
+=======
+  const isBearerAuthorized = authHeader === `Bearer ${ADMIN_SECRET_KEY}`;
+  const isQueryAuthorized = queryKey === ADMIN_SECRET_KEY;
+
+  if (!isBearerAuthorized && !isQueryAuthorized) {
+    // Return 403 Forbidden to protect customer PII data
+    return res.status(403).json({
+      error: 'सुरक्षा प्रतिबंध: अनधिकृत पहुंच (Unauthorized). व्यवस्थापक कुंजी आवश्यक है।'
+>>>>>>> origin/main
     });
   }
 
@@ -662,6 +715,7 @@ app.get('/privacy', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
 });
 
+<<<<<<< HEAD
 // Global Error Handler: Prevents leaking stack traces or internal implementation details
 app.use((err, req, res, next) => {
   if (err.message === 'CORS block by security policy') {
@@ -671,6 +725,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'आंतरिक सर्वर त्रुटि (Internal Server Error)' });
 });
 
+=======
+>>>>>>> origin/main
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);

@@ -42,7 +42,11 @@
 
 1. रिपॉजिटरी में जाएं:
    ```bash
+<<<<<<< HEAD
    cd c:\Users\lamga\Desktop\skilldhan-main\skilldhan-main
+=======
+   cd c:\Users\lamga\Desktop\mydigitalstore
+>>>>>>> origin/main
    ```
 2. डिपेंडेंसीज इनस्टॉल करें (पहले से इनस्टॉल हैं):
    ```bash
@@ -74,4 +78,8 @@ RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxx
 
 ## ☁️ AWS EC2 डिप्लॉयमेंट
 
+<<<<<<< HEAD
 विस्तृत चरण-दर-चरण निर्देश के लिए [EC2_DEPLOYMENT_GUIDE.md](file:///c:/Users/lamga/Desktop/skilldhan-main/skilldhan-main/EC2_DEPLOYMENT_GUIDE.md) देखें।
+=======
+विस्तृत चरण-दर-चरण निर्देश के लिए [EC2_DEPLOYMENT_GUIDE.md](file:///c:/Users/lamga/Desktop/mydigitalstore/EC2_DEPLOYMENT_GUIDE.md) देखें।
+>>>>>>> origin/main

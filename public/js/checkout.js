@@ -156,7 +156,11 @@ function launchRazorpayCheckout(orderData, customerInfo) {
     key: orderData.keyId,
     amount: orderData.amount,
     currency: orderData.currency,
+<<<<<<< HEAD
     name: storeConfig.support?.storeName || "Skilldhan",
+=======
+    name: "DigitalGuru AI",
+>>>>>>> origin/main
     description: "AI Digital Business eBook + Bonuses",
     image: "/assets/ebook-cover.jpg",
     order_id: orderData.orderId,

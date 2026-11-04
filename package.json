@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "skilldhan",
+=======
+  "name": "mydigitalstore",
+>>>>>>> origin/main
   "version": "1.0.0",
   "description": "AI Digital Business eBook - High Converting Landing Page and Checkout with Razorpay Integration for EC2",
   "main": "server.js",

@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
   <title>भुगतान सफल! | आपकी ई-बुक डाउनलोड के लिए तैयार है | Skilldhan</title>
+=======
+  <title>भुगतान सफल! | आपकी ई-बुक डाउनलोड के लिए तैयार है | DigitalGuru AI</title>
+>>>>>>> origin/main
   <meta name="description" content="बधाई हो! आपका भुगतान सफल रहा। अपनी AI डिजिटल बिज़नेस ई-बुक और सभी बोनस अभी डाउनलोड करें।">
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2226%22 font-size=%2224%22>🎉</text></svg>">
@@ -20,7 +24,11 @@
       <a href="/" class="logo-brand">
         <div class="logo-icon">🤖</div>
         <div class="logo-text">
+<<<<<<< HEAD
           <span class="logo-title">Skilldhan</span>
+=======
+          <span class="logo-title">DigitalGuru AI</span>
+>>>>>>> origin/main
           <span class="logo-subtitle">ऑर्डर पुष्टिकरण</span>
         </div>
       </a>
@@ -146,6 +154,7 @@
       if (orderEl)  orderEl.textContent  = finalOrderId;
       if (payEl)    payEl.textContent    = finalPaymentId;
 
+<<<<<<< HEAD
       // Security: Validate that download URLs strictly begin with safe internal relative API paths
       // Prevents DOM XSS (javascript: URI) and Open Redirect attacks
       function isSafeDownloadUrl(url, expectedPrefix) {
@@ -164,6 +173,14 @@
         bonusBtn.href = finalBonusUrl;
       } else if (bonusBtn) {
         bonusBtn.style.display = 'none';
+=======
+      // Use secure tokenized download URLs (prevents unauthorized download)
+      if (mainBtn && finalDownloadUrl !== '#') {
+        mainBtn.href = finalDownloadUrl;
+      }
+      if (bonusBtn && finalBonusUrl !== '#') {
+        bonusBtn.href = finalBonusUrl;
+>>>>>>> origin/main
       }
 
       // Fire Purchase tracking event (GA4 + Meta Pixel)
