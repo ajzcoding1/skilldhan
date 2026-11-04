@@ -88,6 +88,8 @@ cd ~/skilldhan
 scp -i "your-key.pem" -r .\skilldhan-main ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu/skilldhan
 ```
 
+> **Download files:** `downloads/` folder को भी server पर रखें। Payment verify होने के बाद app यहीं के PDFs को secure download endpoint से सीधे customer के device पर भेजता है; Google Drive या public file link की जरूरत नहीं है।
+
 ---
 
 ## 🔑 Step 5: Dependencies और Environment Variables (.env) सेट करें
@@ -98,7 +100,7 @@ cd ~/skilldhan
 npm install --production
 ```
 
-`.env` फाइल बनाएं। पहले Razorpay Dashboard में **Test Mode** की API keys लें और उन्हीं से payment flow जांचें:
+`.env` फाइल बनाएं। Production EC2 server के लिए **Live Mode** credentials ही रखें:
 ```bash
 nano .env
 ```
@@ -108,9 +110,10 @@ PORT=3000
 NODE_ENV=production
 SITE_URL=https://skilldhan.shop
 
-# पहले Test Mode keys से जांचें; सफल परीक्षण के बाद ही Live Mode keys डालें
-RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxxxx
-RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+# Razorpay Dashboard के Live Mode से matching keys लें
+RAZORPAY_KEY_ID=rzp_live_REPLACE_WITH_YOUR_LIVE_KEY_ID
+RAZORPAY_KEY_SECRET=REPLACE_WITH_YOUR_LIVE_KEY_SECRET
+ADMIN_SECRET_KEY=PASTE_A_RANDOM_SECRET_HERE
 
 # Product Pricing
 PRODUCT_NAME=AI की मदद से अपना पहला डिजिटल बिज़नेस (eBook + Bonuses)
@@ -133,6 +136,15 @@ Secrets को केवल server पर रखें और file permissions �
 ```bash
 chmod 600 .env
 ```
+
+`ADMIN_SECRET_KEY` में `openssl` से मिला ठीक 64-character hexadecimal output डालें; placeholder या कोई छोटा/अलग format स्वीकार नहीं होगा:
+```bash
+openssl rand -hex 32
+```
+
+Production server Test keys, missing credentials, 64-character hex format से अलग admin secret, invalid INR prices, या missing download files के साथ start नहीं होगा। पहले local या अलग staging environment (`NODE_ENV=development`) में Razorpay **Test Mode** से checkout, captured-payment verification और downloads जांचें। Production पर deploy करने से पहले यहां `NODE_ENV=production` और matching Live credentials रखें; Razorpay में payment capture/auto-capture enable रखें। Secret/key को chat या Git में साझा न करें।
+
+Orders अभी local `orders.json` में store होते हैं। PM2 को एक process पर रखें (ecosystem config में ऐसा सेट है); कई workers/servers चलाने से पहले shared database और shared file storage लगाएं।
 
 ---
 
@@ -208,21 +220,17 @@ sudo certbot --nginx -d skilldhan.shop -d www.skilldhan.shop
 
 ---
 
-## 💳 Step 9: Razorpay में Webhook सेटअप (वैकल्पिक परंतु उत्तम)
+## 💳 Step 9: Razorpay Webhook
 
-1. [Razorpay Dashboard](https://dashboard.razorpay.com) -> **Settings** -> **Webhooks** में जाएं।
-2. **"Add New Webhook"** पर क्लिक करें:
-   - **URL:** `https://skilldhan.shop/api/verify-payment`
-   - **Events:** `payment.captured`, `order.paid`
-3. सेव करें।
+इस app में webhook signature वाला अलग webhook endpoint अभी उपलब्ध नहीं है। Razorpay Dashboard में webhook को `/api/verify-payment` पर configure **न करें**—यह route Checkout callback के लिए है। Payment verification app Razorpay API से server-side confirm करता है।
 
 ---
 
 ## 🎯 टेस्ट और अंतिम जांच
 1. पहले confirm करें कि domain का DNS आपके EC2 instance के public IP पर point करता है।
 2. ब्राउज़र में `https://skilldhan.shop` खोलें और landing page जांचें।
-3. Razorpay test mode में checkout और payment verification flow पूरा करें; live payment से पहले test credentials इस्तेमाल करें।
-4. Payment के बाद confirmation page पर download links जांचें। सभी checks सफल होने पर ही `.env` में `rzp_live_...` और Live Mode secret डालें।
+3. Live launch से पहले local/staging में Razorpay Test Mode checkout और download flow पूरा करें; production domain पर test credentials na डालें।
+4. Production पर कम राशि का वास्तविक Live payment करके captured status और PDF download verify करें; जरूरत हो तो Razorpay Dashboard से refund करें।
 5. सर्वर पर app status/logs जांचें:
    ```bash
    pm2 status

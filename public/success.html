@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
-  <link rel="stylesheet" href="/css/style.css?v=20261104">
+  <link rel="stylesheet" href="/css/style.css?v=20261104-live">
 </head>
 <body style="background-color: var(--bg-primary);">
 
@@ -36,8 +36,8 @@
         Your payment was successful! 🎉
       </h1>
       
-      <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 30px auto;">
-        Your purchase is confirmed. Use the buttons below to download your eBook and included bonuses.
+      <p id="delivery-instructions" style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 30px auto;">
+        Use the buttons below to download your eBook and included bonuses.
       </p>
 
       <!-- Order Info Box -->
@@ -69,6 +69,7 @@
           <a href="#" id="main-download-btn" class="btn btn-gold btn-block" style="padding: 14px;">
             📥 Download eBook (PDF)
           </a>
+          <p id="download-status" role="status" aria-live="polite" hidden></p>
         </div>
 
         <!-- Bonus Bundle Card -->
@@ -137,6 +138,8 @@
       const payEl     = document.getElementById('display-payment-id');
       const mainBtn   = document.getElementById('main-download-btn');
       const bonusBtn  = document.getElementById('bonus-download-btn');
+      const downloadStatus = document.getElementById('download-status');
+      const deliveryInstructions = document.getElementById('delivery-instructions');
 
       if (orderEl)  orderEl.textContent  = finalOrderId;
       if (payEl)    payEl.textContent    = finalPaymentId;
@@ -151,6 +154,36 @@
       // Use secure tokenized download URLs with strict validation
       if (mainBtn && isSafeDownloadUrl(finalDownloadUrl, '/api/download?')) {
         mainBtn.href = finalDownloadUrl;
+        const cameFromCheckout = Boolean(orderId && paymentId && downloadUrl);
+        const downloadKey = `auto-download-started-${finalOrderId}`;
+        let alreadyStarted = false;
+
+        try {
+          alreadyStarted = sessionStorage.getItem(downloadKey) === 'true';
+        } catch (error) {
+          console.warn('Could not check automatic download status:', error);
+        }
+
+        if (cameFromCheckout && !alreadyStarted) {
+          try {
+            sessionStorage.setItem(downloadKey, 'true');
+          } catch (error) {
+            console.warn('Could not save automatic download status:', error);
+          }
+
+          if (downloadStatus) {
+            downloadStatus.textContent = 'Your eBook download is starting. If it does not start, use the button above.';
+            downloadStatus.hidden = false;
+          }
+          if (deliveryInstructions) {
+            deliveryInstructions.textContent = 'Your eBook download will start automatically. Included bonuses are available from the download buttons below.';
+          }
+
+          window.setTimeout(() => mainBtn.click(), 500);
+        } else if (downloadStatus && alreadyStarted) {
+          downloadStatus.textContent = 'To download the eBook again, use the button above.';
+          downloadStatus.hidden = false;
+        }
       } else if (mainBtn) {
         mainBtn.style.display = 'none';
       }

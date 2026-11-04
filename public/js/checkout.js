@@ -5,10 +5,11 @@
 
 let storeConfig = {
   keyId: '',
-  isDemoMode: true,
+  isDemoMode: false,
   basePrice: 199,
   orderBump: { enabled: true, price: 99 }
 };
+let configLoaded = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadStoreConfig();
@@ -21,9 +22,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadStoreConfig() {
   try {
-    const res = await fetch('/api/config');
+    const res = await fetch('/api/config', { cache: 'no-store' });
+    if (!res.ok) throw new Error('Checkout configuration request failed.');
     const data = await res.json();
+    if (
+      typeof data.isDemoMode !== 'boolean' ||
+      typeof data.keyId !== 'string' ||
+      !data.keyId ||
+      !Number.isSafeInteger(data.basePrice) ||
+      data.basePrice <= 0 ||
+      !data.orderBump ||
+      typeof data.orderBump.enabled !== 'boolean' ||
+      typeof data.orderBump.title !== 'string' ||
+      !Number.isSafeInteger(data.orderBump.price) ||
+      data.orderBump.price < 0
+    ) {
+      throw new Error('Checkout configuration is incomplete.');
+    }
     storeConfig = data;
+    configLoaded = true;
     updatePriceDisplay();
 
     if (storeConfig.isDemoMode) {
@@ -31,15 +48,33 @@ async function loadStoreConfig() {
       if (modeIndicator) modeIndicator.style.display = 'block';
     }
   } catch (err) {
-    console.warn('Could not load /api/config, using defaults:', err);
+    console.error('Could not load secure checkout configuration:', err);
+    const payBtn = document.getElementById('pay-submit-btn');
+    if (payBtn) payBtn.disabled = true;
+    showError('Secure checkout is unavailable right now. Please refresh the page or contact support.');
   }
 }
 
 function updatePriceDisplay() {
   const bumpCheckbox = document.getElementById('bump-checkbox');
+  const bumpPrice = storeConfig.orderBump.price;
+  const bumpEnabled = storeConfig.orderBump.enabled;
+  const bumpBox = document.querySelector('.order-bump-box');
+  const bumpTitle = document.getElementById('bump-title');
+  const summaryBumpTitle = document.getElementById('summary-bump-title');
+  const summaryBumpPrice = document.getElementById('summary-bump-price');
+
+  if (bumpCheckbox) {
+    bumpCheckbox.disabled = !bumpEnabled;
+    if (!bumpEnabled) bumpCheckbox.checked = false;
+  }
+  if (bumpBox) bumpBox.style.display = bumpEnabled ? '' : 'none';
+  if (bumpTitle) bumpTitle.textContent = `⚡ Add ${storeConfig.orderBump.title} for just ₹${bumpPrice}`;
+  if (summaryBumpTitle) summaryBumpTitle.textContent = `${storeConfig.orderBump.title}:`;
+  if (summaryBumpPrice) summaryBumpPrice.textContent = `+ ₹${bumpPrice}`;
+
   const includeBump = bumpCheckbox && bumpCheckbox.checked;
-  const basePrice = storeConfig.basePrice || 199;
-  const bumpPrice = storeConfig.orderBump?.price || 99;
+  const basePrice = storeConfig.basePrice;
   const finalPrice = includeBump ? basePrice + bumpPrice : basePrice;
 
   const bumpRow = document.getElementById('summary-bump-row');
@@ -58,7 +93,7 @@ function initCheckoutEvents() {
     bumpCheckbox.addEventListener('change', () => {
       updatePriceDisplay();
       if (window.StoreTracking) {
-        window.StoreTracking.trackOrderBump(bumpCheckbox.checked, storeConfig.orderBump?.price || 99);
+        window.StoreTracking.trackOrderBump(bumpCheckbox.checked, storeConfig.orderBump.price);
       }
     });
   }
@@ -69,6 +104,10 @@ function initCheckoutEvents() {
 
 async function handleCheckoutSubmit(e) {
   e.preventDefault();
+  if (!configLoaded) {
+    showError('Secure checkout is unavailable right now. Please refresh the page or contact support.');
+    return;
+  }
 
   const nameInput = document.getElementById('cust-name');
   const emailInput = document.getElementById('cust-email');
@@ -116,10 +155,16 @@ async function handleCheckoutSubmit(e) {
       throw new Error(orderData.error || 'Could not create the order.');
     }
 
-    if (!orderData.isDemoMode && window.Razorpay) {
+    if (orderData.isDemoMode !== storeConfig.isDemoMode) {
+      throw new Error('Checkout mode changed. Refresh the page and try again.');
+    }
+
+    if (orderData.isDemoMode === true) {
+      simulateDemoPayment(orderData, { name, email, phone, includeBump });
+    } else if (window.Razorpay) {
       launchRazorpayCheckout(orderData, { name, email, phone, includeBump });
     } else {
-      simulateDemoPayment(orderData, { name, email, phone, includeBump });
+      throw new Error('Secure payment checkout is unavailable. Please refresh the page or contact support.');
     }
   } catch (err) {
     console.error('Checkout failed:', err);
@@ -229,8 +274,11 @@ async function verifyPaymentSuccess(verifyPayload) {
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Payment verification failed.');
     }
+    if (!Number.isSafeInteger(data.amount) || data.amount <= 0) {
+      throw new Error('Payment was verified, but the order amount could not be confirmed. Please contact support.');
+    }
 
-    const totalPaid = verifyPayload.includeBump ? 298 : 199;
+    const totalPaid = data.amount;
     sessionStorage.setItem('last_order', JSON.stringify({
       orderId: data.orderId,
       paymentId: data.paymentId,

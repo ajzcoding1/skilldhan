@@ -12,7 +12,31 @@ const Razorpay = require('razorpay');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SITE_URL = (process.env.SITE_URL || 'http://localhost:' + PORT).replace(/\/$/, '');
-const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'default_super_admin_key_replace_in_env';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || (IS_PRODUCTION ? '' : 'default_super_admin_key_replace_in_env');
+
+// Trust only the single Nginx proxy; keep port 3000 private to the instance.
+app.set('trust proxy', 1);
+
+if (IS_PRODUCTION && (
+  !/^[a-f0-9]{64}$/i.test(ADMIN_SECRET_KEY) ||
+  ADMIN_SECRET_KEY === 'default_super_admin_key_replace_in_env' ||
+  ADMIN_SECRET_KEY === 'change_this_to_a_super_secret_key_12345'
+)) {
+  throw new Error('Production requires ADMIN_SECRET_KEY to be a 64-character hex secret generated with openssl rand -hex 32.');
+}
+
+if (IS_PRODUCTION) {
+  let siteUrl;
+  try {
+    siteUrl = new URL(SITE_URL);
+  } catch {
+    throw new Error('Production requires a valid HTTPS SITE_URL.');
+  }
+  if (siteUrl.protocol !== 'https:') {
+    throw new Error('Production requires a valid HTTPS SITE_URL.');
+  }
+}
 
 /* ==========================================================
    1. CYBERSECURITY HARDENING & HEADERS (Helmet & CSP)
@@ -181,36 +205,55 @@ function saveOrder(order) {
    ========================================================== */
 const RAZORPAY_KEY_ID = (process.env.RAZORPAY_KEY_ID || '').trim();
 const RAZORPAY_KEY_SECRET = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+const hasRazorpayKey = Boolean(RAZORPAY_KEY_ID);
+const hasRazorpaySecret = Boolean(RAZORPAY_KEY_SECRET);
+const hasPlaceholderKey = /sampleKey|YourTestKeyId|xxxxxxxx/i.test(RAZORPAY_KEY_ID);
+const hasPlaceholderSecret = /YourTestKeySecret|xxxxxxxx/i.test(RAZORPAY_KEY_SECRET);
+const isDemoMode = (!hasRazorpayKey && !hasRazorpaySecret) ||
+  (hasPlaceholderKey && hasPlaceholderSecret);
 
-const isDemoMode = !RAZORPAY_KEY_ID || 
-                   RAZORPAY_KEY_ID.includes('sampleKey') || 
-                   RAZORPAY_KEY_ID.includes('YourTestKeyId');
+if (hasRazorpayKey !== hasRazorpaySecret || (hasPlaceholderKey !== hasPlaceholderSecret)) {
+  throw new Error('Configure both valid Razorpay credentials, or remove both credentials to use non-production demo mode.');
+}
+
+if (IS_PRODUCTION && (isDemoMode || !RAZORPAY_KEY_ID.startsWith('rzp_live_'))) {
+  throw new Error('Production requires valid Razorpay Live credentials (rzp_live_ key ID and secret). Demo and Test credentials are disabled.');
+}
+
+if (!isDemoMode && !RAZORPAY_KEY_ID.startsWith('rzp_test_') && !RAZORPAY_KEY_ID.startsWith('rzp_live_')) {
+  throw new Error('Razorpay key ID must use the rzp_test_ or rzp_live_ prefix.');
+}
+
+const MAIN_DOWNLOAD_FILE = path.join(__dirname, 'downloads', 'AI-Digital-Business-Guide.pdf');
+const BONUS_DOWNLOAD_FILE = path.join(__dirname, 'downloads', 'full_kit', '03_100_Premium_AI_Prompts.pdf');
+if (IS_PRODUCTION && (!fs.existsSync(MAIN_DOWNLOAD_FILE) || !fs.existsSync(BONUS_DOWNLOAD_FILE))) {
+  throw new Error('Production download files are missing. Check the downloads directory before starting the store.');
+}
 
 let razorpay = null;
 if (!isDemoMode) {
-  try {
-    razorpay = new Razorpay({
-      key_id: RAZORPAY_KEY_ID,
-      key_secret: RAZORPAY_KEY_SECRET
-    });
-    console.log('✅ Razorpay initialized successfully with Key ID:', RAZORPAY_KEY_ID);
-  } catch (err) {
-    console.warn('⚠️ Razorpay initialization warning:', err.message);
-  }
+  razorpay = new Razorpay({
+    key_id: RAZORPAY_KEY_ID,
+    key_secret: RAZORPAY_KEY_SECRET
+  });
+  console.log('✅ Razorpay initialized successfully.');
 } else {
+  if (IS_PRODUCTION) {
+    throw new Error('Demo payments are not allowed in production.');
+  }
   console.log('ℹ️ Running in Sandbox / Demo Mode. Add your Razorpay Key ID and Secret in .env for live transactions.');
 }
 
 // Product configuration
 const PRODUCT_CONFIG = {
   name: process.env.PRODUCT_NAME || 'Start Your First Digital Business with AI',
-  price: parseInt(process.env.PRODUCT_PRICE || '199', 10),
-  mrp: parseInt(process.env.PRODUCT_MRP || '999', 10),
+  price: Number(process.env.PRODUCT_PRICE || '199'),
+  mrp: Number(process.env.PRODUCT_MRP || '999'),
   currency: process.env.PRODUCT_CURRENCY || 'INR',
   orderBump: {
     enabled: process.env.ORDER_BUMP_ENABLED === 'true',
     title: process.env.ORDER_BUMP_TITLE || '🔥 Exclusive AI Prompt Vault (500+ Master Prompts)',
-    price: parseInt(process.env.ORDER_BUMP_PRICE || '99', 10)
+    price: Number(process.env.ORDER_BUMP_PRICE || '99')
   },
   support: {
     email: process.env.SUPPORT_EMAIL || 'support@skilldhan.shop',
@@ -221,6 +264,18 @@ const PRODUCT_CONFIG = {
     metaPixelId: (process.env.META_PIXEL_ID || '').trim()
   }
 };
+
+if (
+  !Number.isSafeInteger(PRODUCT_CONFIG.price) ||
+  PRODUCT_CONFIG.price <= 0 ||
+  !Number.isSafeInteger(PRODUCT_CONFIG.mrp) ||
+  PRODUCT_CONFIG.mrp < PRODUCT_CONFIG.price ||
+  !Number.isSafeInteger(PRODUCT_CONFIG.orderBump.price) ||
+  PRODUCT_CONFIG.orderBump.price < 0 ||
+  PRODUCT_CONFIG.currency !== 'INR'
+) {
+  throw new Error('Product prices must be valid whole INR amounts, and MRP must not be below the product price.');
+}
 
 /* ==========================================================
    5. SANITIZATION & VALIDATION HELPERS
@@ -323,7 +378,7 @@ app.post('/api/create-order', paymentLimiter, async (req, res) => {
     }
 
     // Save pending order with clean customer details
-    saveOrder({
+    const saved = saveOrder({
       orderId: orderData.orderId,
       receiptId,
       customer: { name: cleanName, email: cleanEmail, phone: cleanPhone },
@@ -331,8 +386,12 @@ app.post('/api/create-order', paymentLimiter, async (req, res) => {
       currency: 'INR',
       includeBump: includeBump,
       status: 'pending',
-      isDemoMode: isDemoMode
+      isDemoMode: isDemoMode,
+      paymentEnvironment: IS_PRODUCTION ? 'live' : 'non-production'
     });
+    if (!saved) {
+      return res.status(500).json({ error: 'Could not save your order. Please try again.' });
+    }
 
     res.json({
       success: true,
@@ -354,14 +413,12 @@ app.post('/api/create-order', paymentLimiter, async (req, res) => {
 });
 
 // 3. Verify Payment with Constant-Time Timing-Attack-Safe Signature Comparison
-app.post('/api/verify-payment', paymentLimiter, (req, res) => {
+app.post('/api/verify-payment', paymentLimiter, async (req, res) => {
   try {
     const { 
       razorpay_order_id, 
       razorpay_payment_id, 
-      razorpay_signature,
-      customer,
-      includeBump
+      razorpay_signature
     } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id) {
@@ -373,18 +430,45 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
       return res.status(400).json({ error: 'Invalid order or payment ID format.' });
     }
 
-    let isValid = false;
+    const orders = getOrders();
+    let pendingOrder = orders.find(order => order.orderId === razorpay_order_id);
+    if (!pendingOrder) {
+      return res.status(403).json({ success: false, error: 'Order not found. Please create a new order.' });
+    }
+    if (IS_PRODUCTION && pendingOrder.paymentEnvironment !== 'live') {
+      return res.status(403).json({ success: false, error: 'This order was not created in live payment mode.' });
+    }
 
     if (isDemoMode) {
-      // Sandbox / Demo mode: allow simulated order verification
-      isValid = razorpay_order_id.startsWith('order_demo_');
-    } else {
-      // Live Production Mode: demo order prefix is strictly blocked to prevent free download bypass
-      if (razorpay_order_id.startsWith('order_demo_')) {
-        console.warn(`🚨 Security Alert: Blocked simulated demo orderId in LIVE production mode. IP: ${req.ip}`);
-        return res.status(403).json({ success: false, error: 'Demo orders are not accepted in live mode.' });
+      if (IS_PRODUCTION || !pendingOrder.isDemoMode || !razorpay_order_id.startsWith('order_demo_')) {
+        return res.status(403).json({ success: false, error: 'Demo orders are not accepted.' });
+      }
+    } else if (pendingOrder.isDemoMode || razorpay_order_id.startsWith('order_demo_')) {
+      console.warn(`🚨 Security Alert: Blocked simulated demo orderId outside demo mode. IP: ${req.ip}`);
+      return res.status(403).json({ success: false, error: 'Demo orders are not accepted.' });
+    }
+
+    if (pendingOrder.status === 'paid') {
+      if (pendingOrder.paymentId !== razorpay_payment_id || !pendingOrder.downloadToken) {
+        return res.status(409).json({ success: false, error: 'This order has already been completed.' });
       }
 
+      return res.json({
+        success: true,
+        message: 'Payment already verified. Your eBook is ready.',
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        amount: pendingOrder.amount,
+        downloadUrl: `/api/download?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`,
+        bonusDownloadUrl: `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`
+      });
+    }
+
+    if (pendingOrder.status !== 'pending') {
+      return res.status(403).json({ success: false, error: 'This order is not eligible for download.' });
+    }
+
+    if (!isDemoMode) {
       // Timing-safe HMAC SHA-256 verification
       if (!razorpay_signature || typeof razorpay_signature !== 'string') {
         return res.status(400).json({ success: false, error: 'Payment signature is missing.' });
@@ -399,19 +483,55 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
       const expectedBuf = Buffer.from(expectedSignature, 'utf8');
       const actualBuf = Buffer.from(razorpay_signature, 'utf8');
 
-      if (expectedBuf.length === actualBuf.length) {
-        isValid = crypto.timingSafeEqual(expectedBuf, actualBuf);
-      } else {
-        isValid = false;
+      if (expectedBuf.length !== actualBuf.length || !crypto.timingSafeEqual(expectedBuf, actualBuf)) {
+        console.warn(`🚨 Security Alert: Failed signature verification attempt for Order: ${razorpay_order_id}`);
+        return res.status(400).json({ success: false, error: 'Payment verification failed.' });
+      }
+
+      const expectedAmount = pendingOrder.amount * 100;
+      const [razorpayOrder, payment] = await Promise.all([
+        razorpay.orders.fetch(razorpay_order_id),
+        razorpay.payments.fetch(razorpay_payment_id)
+      ]);
+
+      if (
+        razorpayOrder.id !== razorpay_order_id ||
+        razorpayOrder.amount !== expectedAmount ||
+        razorpayOrder.amount_paid !== expectedAmount ||
+        razorpayOrder.currency !== 'INR' ||
+        razorpayOrder.status !== 'paid' ||
+        payment.order_id !== razorpay_order_id ||
+        payment.amount !== expectedAmount ||
+        payment.currency !== 'INR' ||
+        payment.status !== 'captured' ||
+        payment.captured !== true
+      ) {
+        console.warn(`🚨 Security Alert: Payment amount/status mismatch for Order: ${razorpay_order_id}`);
+        return res.status(403).json({ success: false, error: 'Payment is not fully captured for this order.' });
       }
     }
 
-    if (!isValid) {
-      console.warn(`🚨 Security Alert: Failed signature verification attempt for Order: ${razorpay_order_id}`);
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Payment verification failed.'
+    pendingOrder = getOrders().find(order => order.orderId === razorpay_order_id);
+    if (!pendingOrder) {
+      return res.status(403).json({ success: false, error: 'Order not found. Please contact support.' });
+    }
+    if (pendingOrder.status === 'paid') {
+      if (pendingOrder.paymentId !== razorpay_payment_id || !pendingOrder.downloadToken) {
+        return res.status(409).json({ success: false, error: 'This order has already been completed.' });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Payment already verified. Your eBook is ready.',
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        amount: pendingOrder.amount,
+        downloadUrl: `/api/download?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`,
+        bonusDownloadUrl: `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`
       });
+    }
+    if (pendingOrder.status !== 'pending') {
+      return res.status(403).json({ success: false, error: 'This order is not eligible for download.' });
     }
 
     // Generate a cryptographically secure token for download authorization
@@ -420,6 +540,7 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
 
     // Update order status in atomic database
     const orderRecord = {
+      ...pendingOrder,
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       signature: razorpay_signature || 'demo_signature',
@@ -428,15 +549,13 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
       tokenExpiry: tokenExpiry,
       downloadCount: 0,
       maxDownloads: 10,
-      customer: {
-        name: sanitizeString(customer?.name || ''),
-        email: (customer?.email || '').trim().toLowerCase(),
-        phone: (customer?.phone || '').replace(/\D/g, '')
-      },
-      includeBump: !!includeBump,
+      customer: pendingOrder.customer,
+      includeBump: pendingOrder.includeBump,
       paidAt: new Date().toISOString()
     };
-    saveOrder(orderRecord);
+    if (!saveOrder(orderRecord)) {
+      return res.status(500).json({ success: false, error: 'Payment was received, but the order could not be saved. Contact support before retrying payment.' });
+    }
 
     console.log(`🎉 Payment Verified: Order ${razorpay_order_id}, Payment ${razorpay_payment_id}`);
 
@@ -445,6 +564,7 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
       message: 'Payment successful. Your eBook is ready.',
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
+      amount: pendingOrder.amount,
       downloadUrl: `/api/download?orderId=${encodeURIComponent(razorpay_order_id)}&token=${downloadToken}`,
       bonusDownloadUrl: `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${downloadToken}`
     });
@@ -481,13 +601,16 @@ app.get('/api/download', downloadLimiter, (req, res) => {
   }
 
   // Verify secure token
-  if (order.downloadToken !== token) {
+  if (!matchesDownloadToken(order.downloadToken, token)) {
     return res.status(403).send('Invalid or expired security token. Please contact support.');
   }
 
   // Verify expiry time (72 hours limit)
-  if (order.tokenExpiry && Date.now() > order.tokenExpiry) {
+  if (!Number.isFinite(order.tokenExpiry) || Date.now() > order.tokenExpiry) {
     return res.status(403).send('This download link expired after 72 hours. Contact support for assistance.');
+  }
+  if (IS_PRODUCTION && order.paymentEnvironment !== 'live') {
+    return res.status(403).send('This order was not created in live payment mode.');
   }
 
   // Enforce maximum download limit (Anti-piracy / anti-sharing)
@@ -498,18 +621,11 @@ app.get('/api/download', downloadLimiter, (req, res) => {
 
   // Increment download counter
   order.downloadCount = (order.downloadCount || 0) + 1;
-  saveOrder(order);
-
-  const filePath = path.join(__dirname, 'downloads', 'AI-Digital-Business-Guide.pdf');
-  if (fs.existsSync(filePath)) {
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="AI-Digital-Business-Guide.pdf"');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-  } else {
-    res.status(404).send('File not found on the server. Please contact the administrator.');
+  if (!saveOrder(order)) {
+    return res.status(500).send('Could not authorize the download. Please try again or contact support.');
   }
+
+  sendPaidDownload(res, MAIN_DOWNLOAD_FILE, 'AI-Digital-Business-Guide.pdf');
 });
 
 // 5. Secure Bonus Download with Token
@@ -524,13 +640,16 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
   const orders = getOrders();
   const order = orders.find(o => o.orderId === orderId);
 
-  if (!order || order.status !== 'paid' || order.downloadToken !== token) {
+  if (!order || order.status !== 'paid' || !matchesDownloadToken(order.downloadToken, token)) {
     return res.status(403).send('Bonus download not authorized.');
   }
 
   // Verify expiry time (72 hours limit)
-  if (order.tokenExpiry && Date.now() > order.tokenExpiry) {
+  if (!Number.isFinite(order.tokenExpiry) || Date.now() > order.tokenExpiry) {
     return res.status(403).send('This bonus download link expired after 72 hours.');
+  }
+  if (IS_PRODUCTION && order.paymentEnvironment !== 'live') {
+    return res.status(403).send('This order was not created in live payment mode.');
   }
 
   // Enforce maximum download limit on bonus
@@ -540,19 +659,37 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
   }
 
   order.bonusDownloadCount = (order.bonusDownloadCount || 0) + 1;
-  saveOrder(order);
-
-  const filePath = path.join(__dirname, 'downloads', '100-AI-Prompts-Vault.pdf');
-  if (fs.existsSync(filePath)) {
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="100-AI-Prompts-Vault.pdf"');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-  } else {
-    res.status(404).send('File not found on the server.');
+  if (!saveOrder(order)) {
+    return res.status(500).send('Could not authorize the bonus download. Please try again or contact support.');
   }
+
+  sendPaidDownload(res, BONUS_DOWNLOAD_FILE, '100-AI-Prompts-Vault.pdf');
 });
+
+function sendPaidDownload(res, filePath, filename) {
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('Download file is unavailable. Please contact support.');
+  }
+
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.download(filePath, filename, err => {
+    if (!err) return;
+    console.error('Download stream error:', err.message);
+    if (res.headersSent) {
+      res.destroy(err);
+      return;
+    }
+    res.status(500).send('Could not complete the download. Please try again or contact support.');
+  });
+}
+
+function matchesDownloadToken(storedToken, providedToken) {
+  if (typeof storedToken !== 'string' || typeof providedToken !== 'string') return false;
+  const stored = Buffer.from(storedToken, 'utf8');
+  const provided = Buffer.from(providedToken, 'utf8');
+  return stored.length === 64 && stored.length === provided.length && crypto.timingSafeEqual(stored, provided);
+}
 
 // Timing-safe comparison to prevent side-channel timing attacks
 function safeCompareAdminKey(providedKey, expectedKey) {
@@ -574,7 +711,7 @@ app.get('/api/orders', (req, res) => {
   let clientKey = '';
   if (authHeader.startsWith('Bearer ')) {
     clientKey = authHeader.slice(7);
-  } else if (typeof queryKey === 'string') {
+  } else if (!IS_PRODUCTION && typeof queryKey === 'string') {
     clientKey = queryKey;
   }
 
