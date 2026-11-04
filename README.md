@@ -35,6 +35,10 @@
    - PM2 क्लस्टरिंग कॉन्फ़िगरेशन (`ecosystem.config.js`)।
    - Nginx रिवर्स प्रॉक्सी कॉन्फ़िगरेशन (`nginx.conf`)।
    - विस्तृत डिप्लॉयमेंट गाइड (`EC2_DEPLOYMENT_GUIDE.md`)।
+5. **भारत-केंद्रित SEO आधार:**
+   - India-specific English metadata (`en-IN`), INR pricing, और वास्तविक UPI/payment जानकारी।
+   - Organization, website, product, और visible FAQ के अनुरूप structured data।
+   - `/robots.txt` और `/sitemap.xml`; sitemap में केवल canonical, indexable pages शामिल हैं।
 
 ---
 
@@ -75,3 +79,5 @@ RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxx
 ## ☁️ AWS EC2 डिप्लॉयमेंट
 
 विस्तृत चरण-दर-चरण निर्देश के लिए [EC2_DEPLOYMENT_GUIDE.md](file:///c:/Users/lamga/Desktop/skilldhan-main/skilldhan-main/EC2_DEPLOYMENT_GUIDE.md) देखें।
+
+डोमेन HTTPS पर लाइव होने के बाद Google Search Console में domain property verify करें, `/sitemap.xml` submit करें, और URL Inspection से landing page की crawl/index status देखें। Search Console data मिलने पर ही actual query impressions/clicks के आधार पर title और content tune करें; अभी page language English-India (`en-IN`) है।

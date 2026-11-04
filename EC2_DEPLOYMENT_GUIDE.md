@@ -169,43 +169,99 @@ pm2 logs skilldhan
 
 ---
 
+## 🤖 GitHub Actions से Automatic EC2 Deploy
+
+`.github/workflows/deploy-ec2.yml` में deploy workflow है। `main` branch पर push करने पर यह validate करता है, EC2 पर app files deploy करता है, production dependencies install करता है, PM2 reload करता है, और local health endpoint जांचता है। Checkout/payment secrets और `orders.json` archive में शामिल नहीं होते; EC2 की मौजूदा `.env` और orders file सुरक्षित रहती है। Pull requests पर production deploy नहीं चलता।
+
+यह setup EC2 पर **repository-scoped self-hosted GitHub Actions runner** का इस्तेमाल करता है, इसलिए GitHub-hosted runner के लिए SSH port खोलने की जरूरत नहीं है:
+
+1. GitHub repository में **Settings → Actions → Runners → New self-hosted runner** खोलें और Linux x64 चुनें।
+2. EC2 पर `ubuntu` user से दिए गए runner download/configure commands चलाएं। GitHub UI से fresh registration token लें; use के बाद वह expire हो जाता है। Runner को केवल इसी repository से जोड़ें, organization-wide न बनाएं, और service root के बजाय `ubuntu` user के रूप में चलाएं। Configure करते समय `skilldhan-prod` label add करें।
+3. Runner service install/start करके status check करें:
+   ```bash
+   sudo ./svc.sh install ubuntu
+   sudo ./svc.sh start
+   sudo ./svc.sh status
+   ```
+4. EC2 पर project `/home/ubuntu/skilldhan` में हो, `.env` root directory में हो और `chmod 600 .env` set हो। `ubuntu` user को project, `.env`, `orders.json`, downloads, और PM2 process का owner रखें।
+5. EC2 पर Node.js 20+, npm, PM2 और `curl` installed हों। App को पहली बार manually start करें और PM2 startup (`pm2 startup`, फिर printed command) configure करके `pm2 save` करें।
+6. GitHub repository में workflow enable करें। अब `main` पर push या **Actions → Deploy to EC2 → Run workflow** से deploy चलेगा। किसी और production branch का इस्तेमाल हो तो workflow trigger और `github.ref` condition दोनों update करें।
+
+Self-hosted runner trusted repository code चलाता है। Production deployment के लिए `main` पर merge access सिर्फ trusted maintainers को दें, workflow में untrusted pull request triggers न जोड़ें, और runner को root privileges न दें। Workflow failure पर GitHub Actions logs देखें; deploy होने के बाद health check fail हो तो `pm2 status` और `pm2 logs skilldhan` से जांचें।
+
+---
+
 ## 🌐 Step 7: Nginx रिवर्स प्रॉक्सी और SSL (HTTPS) सेटअप
 
 ताकि यूज़र्स को पोर्ट 3000 न लिखना पड़े और सीधे `https://skilldhan.shop` खुले:
 
-1. Nginx कॉन्फ़िगरेशन बनाएं:
+1. **EC2 के लिए स्थिर public IP रखें।** AWS Console → EC2 → Elastic IPs में Elastic IP allocate करके इस instance से associate करें। सामान्य auto-assigned public IP instance stop/start पर बदल सकती है।
+2. अपने domain registrar/DNS provider के DNS management में ये records बनाएं:
+
+   | Type | Name/Host | Value/Points to |
+   |---|---|---|
+   | A | `@` | EC2 की Elastic IP |
+   | A | `www` | EC2 की Elastic IP |
+
+   पुराने conflicting A records हटाएं। अगर आपने IPv6 configure नहीं किया है तो `@`/`www` के पुराने AAAA records भी हटाएं। DNS propagate होने के बाद EC2 पर verify करें:
+   ```bash
+   curl -4 https://checkip.amazonaws.com
+   dig +short A skilldhan.shop
+   dig +short A www.skilldhan.shop
+   ```
+   दोनों `dig` results Elastic IP से match होने चाहिए। AWS Security Group में inbound TCP `80` और `443` public traffic के लिए खुले हों; SSH `22` केवल आपके IP के लिए रखें।
+
+3. Nginx कॉन्फ़िगरेशन बनाएं:
 ```bash
 sudo nano /etc/nginx/sites-available/skilldhan
 ```
 
-निम्न कोड पेस्ट करें:
+Certificate लेने से पहले केवल ACME challenge को HTTP पर उपलब्ध रखें; बाकी HTTP requests को app तक proxy न करें:
 ```nginx
 server {
     listen 80;
     server_name skilldhan.shop www.skilldhan.shop;
 
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type text/plain;
+        try_files $uri =404;
     }
 
-    client_max_body_size 25M;
+    location / {
+        return 404;
+    }
 }
 ```
 
-2. साइट सक्रिय करें और Nginx रीस्टार्ट करें:
+4. साइट सक्रिय करें और Nginx शुरू करें:
 ```bash
+sudo mkdir -p /var/www/certbot/.well-known/acme-challenge
 sudo ln -s /etc/nginx/sites-available/skilldhan /etc/nginx/sites-enabled/
 sudo nginx -t
+sudo systemctl enable nginx
 sudo systemctl restart nginx
 ```
+
+अगर `nginx -t` सफल है लेकिन Nginx start पर `bind() ... :80 failed (98: Address already in use)` आए, और `sudo ss -ltnp 'sport = :80'` में Nginx process दिखे जबकि `systemctl status nginx` inactive/failed हो, तो एक Nginx instance manually चल रहा है। `nginx -s quit` PID file पर निर्भर है; PID file missing/empty हो तो यह काम नहीं करेगा। `ss` output में master PID पहचानें (या `ps -ef | grep '[n]ginx'` में `master process` वाली line देखें), फिर उसी PID को gracefully quit signal भेजें:
+```bash
+sudo kill -QUIT <MASTER_PID>
+sudo ss -ltnp 'sport = :80'
+sudo systemctl reset-failed nginx
+sudo systemctl start nginx
+sudo systemctl status nginx --no-pager -l
+```
+`<MASTER_PID>` को अभी दिख रहे master के PID से बदलें; पुराना/दूसरे process का PID इस्तेमाल न करें। Port 80 listener हटने की पुष्टि के बाद ही systemd start करें। `kill -9` न चलाएं।
+
+अगर `could not build server_names_hash` error आए, तो main config खोलें:
+```bash
+sudo nano /etc/nginx/nginx.conf
+```
+`http { ... }` block के अंदर, किसी `server {}` block के बाहर यह directive जोड़ें:
+```nginx
+server_names_hash_bucket_size 128;
+```
+फिर `sudo nginx -t` सफल होने पर ही `sudo systemctl restart nginx` चलाएं। Nginx inactive हो तो `reload` काम नहीं करेगा।
 
 ---
 
@@ -213,10 +269,43 @@ sudo systemctl restart nginx
 
 Razorpay लाइव पेमेंट्स के लिए HTTPS आवश्यक है। Let's Encrypt से फ्री SSL लगाएं:
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d skilldhan.shop -d www.skilldhan.shop
+sudo apt install -y certbot
+sudo certbot certonly --webroot -w /var/www/certbot -d skilldhan.shop -d www.skilldhan.shop
 ```
-प्रॉम्प्ट का उत्तर दें - Certbot स्वतः ही Nginx में HTTPS कॉन्फ़िगर कर देगा।
+Certificate issue होने के बाद final HTTPS Nginx config लगाएं और reload करें:
+```bash
+cd ~/skilldhan
+sudo cp nginx.conf /etc/nginx/sites-available/skilldhan
+sudo nginx -t
+sudo systemctl reload nginx
+```
+Final config HTTP को canonical HTTPS domain पर redirect करता है और app traffic केवल TLS पर proxy करता है। **Certbot चलाने से पहले दोनों DNS records का EC2 की Elastic IP पर resolve होना जरूरी है।** यदि validation fail हो, बार-बार Certbot चलाने से पहले यह जांचें:
+
+1. EC2 की public/Elastic IP और DNS में दोनों domains के A records मिलाएं:
+   ```bash
+   curl -4 https://checkip.amazonaws.com
+   dig +short A skilldhan.shop
+   dig +short A www.skilldhan.shop
+   ```
+   दोनों DNS results इस EC2 की public/Elastic IP पर जाने चाहिए। गलत/stale A records ठीक करें। अगर आपने IPv6 configure नहीं किया है तो DNS से पुराने AAAA records भी हटाएं। DNS change propagate होने तक इंतजार करें। जब तक results match न करें, Certbot **न चलाएं**—ACME challenge गलत server पर जाएगी।
+2. AWS Security Group में inbound HTTP (80) और HTTPS (443) खुले होने चाहिए। Initial ACME-only Nginx config test karke service चालू करें, फिर जांचें कि HTTP app को serve नहीं करता:
+   ```bash
+   sudo nginx -t
+   sudo systemctl enable nginx
+   sudo systemctl restart nginx
+   curl -i -H 'Host: skilldhan.shop' http://127.0.0.1/
+   ```
+   Landing path पर 404 expected है। Local request पर 500 आए तो पहले app/Nginx logs देखें:
+   ```bash
+   sudo tail -n 80 /var/log/nginx/error.log
+   pm2 logs skilldhan --lines 80
+   ```
+3. बाहर से दोनों domains की DNS/IP जांचें। Initial config में HTTP पर landing page का `404` expected है; app content केवल certificate लगने के बाद HTTPS से खुलेगा। फिर Certbot दोबारा चलाएं:
+   ```bash
+   sudo certbot certonly --webroot -w /var/www/certbot -d skilldhan.shop -d www.skilldhan.shop
+   ```
+
+अगर Certbot error में दिखाया गया IP EC2 की public/Elastic IP से अलग है, तो पहले DNS ठीक करें—certificate request अभी दूसरे server/IP पर जा रही है।
 
 ---
 

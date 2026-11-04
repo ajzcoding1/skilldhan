@@ -1,0 +1,55 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skilldhan-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64, skilldhan-prod]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Validate application
+        run: |
+          npm ci
+          node --check server.js
+
+      - name: Deploy and restart application
+        run: |
+          set -eu
+          app_dir=/home/ubuntu/skilldhan
+          release_archive="$RUNNER_TEMP/skilldhan-${GITHUB_SHA}.tar.gz"
+
+          mkdir -p "$app_dir"
+          tar -czf "$release_archive" \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=.env \
+            --exclude=orders.json \
+            -C "$GITHUB_WORKSPACE" .
+          tar -xzf "$release_archive" -C "$app_dir"
+
+          cd "$app_dir"
+          npm ci --omit=dev
+          pm2 startOrReload ecosystem.config.js --env production --update-env
+          pm2 save
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 --retry-connrefused \
+            http://127.0.0.1:3000/api/config >/dev/null
