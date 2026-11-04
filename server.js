@@ -91,7 +91,9 @@ app.use(helmet({
         "'self'",
         "https://api.razorpay.com",
         "https://checkout.razorpay.com"
-      ]
+      ],
+      // EC2's HTTP IP entry cannot load assets if browsers upgrade them to HTTPS.
+      upgradeInsecureRequests: null
     }
   },
   crossOriginEmbedderPolicy: false,
