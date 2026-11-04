@@ -7,11 +7,17 @@
 ## 📋 पूर्व-आवश्यकताएं (Prerequisites)
 1. एक सक्रिय **AWS Account** (EC2 के लिए)
 2. एक सक्रिय **Razorpay Account** (UPI और कार्ड पेमेंट स्वीकार करने के लिए: [Razorpay Dashboard](https://dashboard.razorpay.com))
-<<<<<<< HEAD
 3. आपका डोमेन: `skilldhan.shop`
-=======
-3. एक कस्टम डोमेन (वैकल्पिक, जैसे: `mydigitalstore.com`)
->>>>>>> origin/main
+4. प्रोजेक्ट का Git repository URL या आपके कंप्यूटर पर उसकी local copy
+
+> **शुरू करने से पहले:** AWS और Razorpay की pricing/eligibility account और region के अनुसार बदल सकती है। EC2 बनाते समय current pricing ज़रूर जांचें। `.env` में live secrets डालें और उन्हें किसी के साथ share या Git में commit न करें।
+
+### इस गाइड में
+- [EC2 instance और network](#step-1-aws-ec2-instance-बनाएं)
+- [सर्वर तैयार करें](#step-2-ec2-सर्वर-में-लॉगिन-करें)
+- [प्रोजेक्ट और environment सेट करें](#step-4-प्रोजेक्ट-फाइल्स-को-ec2-पर-अपलोड-करें)
+- [ऐप, domain और HTTPS चालू करें](#step-6-pm2-के-साथ-ऐप-को-बैकग्राउंड-में-चलाएं)
+- [Webhook और अंतिम जांच](#step-9-razorpay-में-webhook-सेटअप-वैकल्पिक-परंतु-उत्तम)
 
 ---
 
@@ -21,14 +27,15 @@
 2. **"Launch Instance"** पर क्लिक करें:
    - **Name:** `ai-digital-store`
    - **OS Image:** `Ubuntu Server 24.04 LTS` (या `22.04 LTS`) - 64-bit (x86)
-   - **Instance Type:** `t3.micro` या `t2.micro` (AWS Free Tier में मुफ़्त)
-   - **Key pair:** अपनी `.pem` की डाउनलोड करें (SSH लॉगिन के लिए)
+   - **Instance Type:** अपने workload और AWS pricing के अनुसार चुनें। Free Tier/credits की eligibility account और region पर निर्भर करती है।
+   - **Key pair:** नया key pair बनाकर `.pem` file सुरक्षित download करें (SSH login के लिए)।
 3. **Network Settings (Security Group):**
-   निम्न पोर्ट्स खोलें (Inbound Rules):
-   - **SSH (Port 22)** - Anywhere (या आपका IP)
+   केवल ये inbound ports खोलें:
+   - **SSH (Port 22)** - केवल **My IP**; इसे `Anywhere` पर न खोलें।
    - **HTTP (Port 80)** - Anywhere (0.0.0.0/0)
    - **HTTPS (Port 443)** - Anywhere (0.0.0.0/0)
-   - **Custom TCP (Port 3000)** - Anywhere (0.0.0.0/0) - *वैकल्पिक परीक्षण के लिए*
+   
+   > **Port 3000 को public न करें।** App को Nginx के जरिए `127.0.0.1:3000` पर access किया जाएगा।
 4. **"Launch Instance"** पर क्लिक करें।
 
 ---
@@ -71,26 +78,14 @@ pm2 -v
 
 ### विकल्प A: Git द्वारा (अनुशंसित)
 ```bash
-cd /var/www
-<<<<<<< HEAD
-sudo git clone <YOUR_GIT_REPO_URL> skilldhan
-sudo chown -R ubuntu:ubuntu skilldhan
-cd skilldhan
-=======
-sudo git clone <YOUR_GIT_REPO_URL> mydigitalstore
-sudo chown -R ubuntu:ubuntu mydigitalstore
-cd mydigitalstore
->>>>>>> origin/main
+git clone <YOUR_GIT_REPO_URL> ~/skilldhan
+cd ~/skilldhan
 ```
 
 ### विकल्प B: SCP द्वारा अपने कंप्यूटर से सीधे भेजें
-अपने स्थानीय कंप्यूटर (Windows) से:
+अपने स्थानीय कंप्यूटर (Windows) पर project के parent folder से चलाएं। `skilldhan-main` को अपने project folder के नाम से बदलें:
 ```powershell
-<<<<<<< HEAD
-scp -i "your-key.pem" -r c:\Users\lamga\Desktop\skilldhan-main\skilldhan-main ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu/skilldhan
-=======
-scp -i "your-key.pem" -r c:\Users\lamga\Desktop\mydigitalstore ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu/
->>>>>>> origin/main
+scp -i "your-key.pem" -r .\skilldhan-main ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu/skilldhan
 ```
 
 ---
@@ -99,29 +94,22 @@ scp -i "your-key.pem" -r c:\Users\lamga\Desktop\mydigitalstore ubuntu@YOUR_EC2_P
 
 सर्वर डायरेक्टरी में जाएं:
 ```bash
-<<<<<<< HEAD
-cd /home/ubuntu/skilldhan   # या /var/www/skilldhan
-=======
-cd /home/ubuntu/mydigitalstore   # या /var/www/mydigitalstore
->>>>>>> origin/main
+cd ~/skilldhan
 npm install --production
 ```
 
-`.env` फाइल बनाएं और अपनी असली **Razorpay API Keys** डालें:
+`.env` फाइल बनाएं। पहले Razorpay Dashboard में **Test Mode** की API keys लें और उन्हीं से payment flow जांचें:
 ```bash
 nano .env
 ```
-फाइल में निम्नलिखित सेट करें:
+फाइल में निम्नलिखित values अपने setup के अनुसार सेट करें:
 ```env
 PORT=3000
 NODE_ENV=production
-<<<<<<< HEAD
 SITE_URL=https://skilldhan.shop
-=======
->>>>>>> origin/main
 
-# Razorpay Keys (Razorpay Dashboard -> Settings -> API Keys से प्राप्त करें)
-RAZORPAY_KEY_ID=rzp_live_xxxxxxxxxxxxxxxx
+# पहले Test Mode keys से जांचें; सफल परीक्षण के बाद ही Live Mode keys डालें
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxxxx
 RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
 
 # Product Pricing
@@ -136,17 +124,15 @@ ORDER_BUMP_TITLE=🔥 Exclusive AI Prompt Vault (500+ Master Prompts)
 ORDER_BUMP_PRICE=99
 
 # Support details
-<<<<<<< HEAD
 SUPPORT_EMAIL=support@skilldhan.shop
 SUPPORT_WHATSAPP=+919876543210
 STORE_NAME=Skilldhan
-=======
-SUPPORT_EMAIL=support@yourdomain.com
-SUPPORT_WHATSAPP=+919876543210
-STORE_NAME=DigitalGuru AI
->>>>>>> origin/main
 ```
 `Ctrl + O`, `Enter`, और `Ctrl + X` दबाकर सेव करें।
+Secrets को केवल server पर रखें और file permissions सीमित करें:
+```bash
+chmod 600 .env
+```
 
 ---
 
@@ -166,18 +152,13 @@ pm2 startup
 स्थिति जांचने के लिए:
 ```bash
 pm2 status
-<<<<<<< HEAD
 pm2 logs skilldhan
-=======
-pm2 logs mydigitalstore
->>>>>>> origin/main
 ```
 
 ---
 
 ## 🌐 Step 7: Nginx रिवर्स प्रॉक्सी और SSL (HTTPS) सेटअप
 
-<<<<<<< HEAD
 ताकि यूज़र्स को पोर्ट 3000 न लिखना पड़े और सीधे `https://skilldhan.shop` खुले:
 
 1. Nginx कॉन्फ़िगरेशन बनाएं:
@@ -190,20 +171,6 @@ sudo nano /etc/nginx/sites-available/skilldhan
 server {
     listen 80;
     server_name skilldhan.shop www.skilldhan.shop;
-=======
-ताकि यूज़र्स को पोर्ट 3000 न लिखना पड़े और सीधे `http://YOUR_DOMAIN` खुले:
-
-1. Nginx कॉन्फ़िगरेशन बनाएं:
-```bash
-sudo nano /etc/nginx/sites-available/mydigitalstore
-```
-
-निम्न कोड पेस्ट करें (अपना डोमेन या EC2 Public IP डालें):
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com; # या EC2 Public IP
->>>>>>> origin/main
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -223,11 +190,7 @@ server {
 
 2. साइट सक्रिय करें और Nginx रीस्टार्ट करें:
 ```bash
-<<<<<<< HEAD
 sudo ln -s /etc/nginx/sites-available/skilldhan /etc/nginx/sites-enabled/
-=======
-sudo ln -s /etc/nginx/sites-available/mydigitalstore /etc/nginx/sites-enabled/
->>>>>>> origin/main
 sudo nginx -t
 sudo systemctl restart nginx
 ```
@@ -239,11 +202,7 @@ sudo systemctl restart nginx
 Razorpay लाइव पेमेंट्स के लिए HTTPS आवश्यक है। Let's Encrypt से फ्री SSL लगाएं:
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-<<<<<<< HEAD
 sudo certbot --nginx -d skilldhan.shop -d www.skilldhan.shop
-=======
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
->>>>>>> origin/main
 ```
 प्रॉम्प्ट का उत्तर दें - Certbot स्वतः ही Nginx में HTTPS कॉन्फ़िगर कर देगा।
 
@@ -253,25 +212,22 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
 
 1. [Razorpay Dashboard](https://dashboard.razorpay.com) -> **Settings** -> **Webhooks** में जाएं।
 2. **"Add New Webhook"** पर क्लिक करें:
-<<<<<<< HEAD
    - **URL:** `https://skilldhan.shop/api/verify-payment`
-=======
-   - **URL:** `https://yourdomain.com/api/verify-payment`
->>>>>>> origin/main
    - **Events:** `payment.captured`, `order.paid`
 3. सेव करें।
 
 ---
 
-## 🎯 टेस्ट और परीक्षण कैसे करें?
-<<<<<<< HEAD
-1. ब्राउज़र में `https://skilldhan.shop` खोलें - आपका शानदार हिंदी लैंडिंग पेज लोड होगा।
-=======
-1. ब्राउज़र में `https://yourdomain.com` खोलें - आपका शानदार हिंदी लैंडिंग पेज लोड होगा।
->>>>>>> origin/main
-2. **"अभी खरीदें - ₹199"** पर क्लिक करें - चेकआउट पेज खुलेगा।
-3. नाम, ईमेल और व्हाट्सएप नंबर दर्ज करें और पे बटन दबाएं।
-4. भुगतान पूरा होते ही तुरंत `/success` पेज पर **"ई-बुक डाउनलोड करें (PDF)"** बटन आ जाएगा।
-5. ऑर्डर विवरण सर्वर पर `orders.json` फाइल में स्वतः सुरक्षित हो जाता है।
+## 🎯 टेस्ट और अंतिम जांच
+1. पहले confirm करें कि domain का DNS आपके EC2 instance के public IP पर point करता है।
+2. ब्राउज़र में `https://skilldhan.shop` खोलें और landing page जांचें।
+3. Razorpay test mode में checkout और payment verification flow पूरा करें; live payment से पहले test credentials इस्तेमाल करें।
+4. Payment के बाद confirmation page पर download links जांचें। सभी checks सफल होने पर ही `.env` में `rzp_live_...` और Live Mode secret डालें।
+5. सर्वर पर app status/logs जांचें:
+   ```bash
+   pm2 status
+   pm2 logs skilldhan --lines 100
+   ```
+6. `.env` और orders data का सुरक्षित backup रखें; `orders.json` को public repository में commit न करें।
 
-🎉 **बधाई! आपका डिजिटल बिज़नेस स्टोर AWS EC2 पर पूरी तरह तैयार है!**
+🎉 **Deployment पूरा होने के बाद आपका डिजिटल स्टोर HTTPS के जरिए उपलब्ध होगा।**

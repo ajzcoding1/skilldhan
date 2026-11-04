@@ -1,11 +1,7 @@
 module.exports = {
   apps: [
     {
-<<<<<<< HEAD
       name: 'skilldhan',
-=======
-      name: 'mydigitalstore',
->>>>>>> origin/main
       script: 'server.js',
       instances: 'max',
       exec_mode: 'cluster',

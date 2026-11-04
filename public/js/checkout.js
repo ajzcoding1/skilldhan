@@ -13,14 +13,12 @@ let storeConfig = {
 document.addEventListener('DOMContentLoaded', async () => {
   await loadStoreConfig();
   initCheckoutEvents();
-  
-  // Track InitiateCheckout on page entry
+
   if (window.StoreTracking) {
     window.StoreTracking.trackInitiateCheckout(storeConfig.basePrice || 199);
   }
 });
 
-// Fetch backend store configuration
 async function loadStoreConfig() {
   try {
     const res = await fetch('/api/config');
@@ -28,12 +26,9 @@ async function loadStoreConfig() {
     storeConfig = data;
     updatePriceDisplay();
 
-    // Show Demo mode badge if in sandbox/demo mode
     if (storeConfig.isDemoMode) {
       const modeIndicator = document.getElementById('mode-indicator');
-      if (modeIndicator) {
-        modeIndicator.style.display = 'block';
-      }
+      if (modeIndicator) modeIndicator.style.display = 'block';
     }
   } catch (err) {
     console.warn('Could not load /api/config, using defaults:', err);
@@ -43,25 +38,18 @@ async function loadStoreConfig() {
 function updatePriceDisplay() {
   const bumpCheckbox = document.getElementById('bump-checkbox');
   const includeBump = bumpCheckbox && bumpCheckbox.checked;
-
   const basePrice = storeConfig.basePrice || 199;
   const bumpPrice = storeConfig.orderBump?.price || 99;
-  const finalPrice = includeBump ? (basePrice + bumpPrice) : basePrice;
+  const finalPrice = includeBump ? basePrice + bumpPrice : basePrice;
 
   const bumpRow = document.getElementById('summary-bump-row');
-  if (bumpRow) {
-    bumpRow.style.display = includeBump ? 'table-row' : 'none';
-  }
+  if (bumpRow) bumpRow.style.display = includeBump ? 'table-row' : 'none';
 
   const totalEl = document.getElementById('summary-total-price');
-  if (totalEl) {
-    totalEl.textContent = `₹${finalPrice}`;
-  }
+  if (totalEl) totalEl.textContent = `₹${finalPrice}`;
 
   const payBtnText = document.getElementById('pay-btn-text');
-  if (payBtnText) {
-    payBtnText.textContent = `अभी भुगतान करें - ₹${finalPrice} (100% सुरक्षित)`;
-  }
+  if (payBtnText) payBtnText.textContent = `Pay now - ₹${finalPrice} (secure checkout)`;
 }
 
 function initCheckoutEvents() {
@@ -76,9 +64,7 @@ function initCheckoutEvents() {
   }
 
   const form = document.getElementById('checkout-form');
-  if (form) {
-    form.addEventListener('submit', handleCheckoutSubmit);
-  }
+  if (form) form.addEventListener('submit', handleCheckoutSubmit);
 }
 
 async function handleCheckoutSubmit(e) {
@@ -90,39 +76,35 @@ async function handleCheckoutSubmit(e) {
   const bumpCheckbox = document.getElementById('bump-checkbox');
   const payBtn = document.getElementById('pay-submit-btn');
 
-  // Input Sanitization (Cybersecurity Hardening)
   const name = nameInput.value.replace(/[<>'"`;]/g, '').trim();
   const email = emailInput.value.trim().toLowerCase();
   const phone = phoneInput.value.replace(/\D/g, '');
   const includeBump = bumpCheckbox ? bumpCheckbox.checked === true : false;
 
-  // Validation
   if (!name || name.length < 2) {
-    showError('कृपया अपना पूरा नाम दर्ज करें (कम से कम 2 अक्षर)।');
+    showError('Please enter your full name (at least 2 characters).');
     nameInput.focus();
     return;
   }
 
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!email || !emailRegex.test(email)) {
-    showError('कृपया एक वैध ईमेल पता दर्ज करें ताकि हम ई-बुक भेज सकें।');
+    showError('Please enter a valid email address.');
     emailInput.focus();
     return;
   }
 
-  // Strict Indian mobile validation (10 digits starting with 6, 7, 8, or 9)
   if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
-    showError('कृपया 10 अंकों का वैध भारतीय व्हाट्सएप/मोबाइल नंबर दर्ज करें (6, 7, 8 या 9 से शुरू)।');
+    showError('Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.');
     phoneInput.focus();
     return;
   }
 
   hideError();
   payBtn.disabled = true;
-  payBtn.innerHTML = '🔄 ऑर्डर सुरक्षित रूप से तैयार हो रहा है...';
+  payBtn.innerHTML = '🔄 Securely preparing your order...';
 
   try {
-    // 1. Create order on backend (server calculates exact amount)
     const createRes = await fetch('/api/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -131,47 +113,37 @@ async function handleCheckoutSubmit(e) {
 
     const orderData = await createRes.json();
     if (!createRes.ok || !orderData.success) {
-      throw new Error(orderData.error || 'ऑर्डर नहीं बन सका।');
+      throw new Error(orderData.error || 'Could not create the order.');
     }
 
-    // 2. Check if we are in real Razorpay mode or Demo simulation
     if (!orderData.isDemoMode && window.Razorpay) {
       launchRazorpayCheckout(orderData, { name, email, phone, includeBump });
     } else {
-      // Demo / Sandbox Simulation Modal
       simulateDemoPayment(orderData, { name, email, phone, includeBump });
     }
-
   } catch (err) {
     console.error('Checkout failed:', err);
-    showError(err.message || 'भुगतान शुरू करने में समस्या हुई। कृपया पुनः प्रयास करें।');
+    showError(err.message || 'Could not start payment. Please try again.');
     payBtn.disabled = false;
     updatePriceDisplay();
   }
 }
 
-// Real Razorpay Checkout Modal
 function launchRazorpayCheckout(orderData, customerInfo) {
   const options = {
     key: orderData.keyId,
     amount: orderData.amount,
     currency: orderData.currency,
-<<<<<<< HEAD
-    name: storeConfig.support?.storeName || "Skilldhan",
-=======
-    name: "DigitalGuru AI",
->>>>>>> origin/main
-    description: "AI Digital Business eBook + Bonuses",
-    image: "/assets/ebook-cover.jpg",
+    name: storeConfig.support?.storeName || 'Skilldhan',
+    description: 'AI Digital Business eBook + Bonuses',
+    image: '/assets/ebook-cover.jpg',
     order_id: orderData.orderId,
     prefill: {
       name: customerInfo.name,
       email: customerInfo.email,
       contact: customerInfo.phone
     },
-    theme: {
-      color: "#6366f1"
-    },
+    theme: { color: '#6366f1' },
     modal: {
       ondismiss: function() {
         const payBtn = document.getElementById('pay-submit-btn');
@@ -181,8 +153,7 @@ function launchRazorpayCheckout(orderData, customerInfo) {
         }
       }
     },
-    handler: async function (response) {
-      // response: razorpay_payment_id, razorpay_order_id, razorpay_signature
+    handler: async function(response) {
       await verifyPaymentSuccess({
         razorpay_order_id: response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
@@ -194,8 +165,8 @@ function launchRazorpayCheckout(orderData, customerInfo) {
   };
 
   const rzp = new window.Razorpay(options);
-  rzp.on('payment.failed', function (response) {
-    showError('भुगतान असफल रहा: ' + (response.error.description || 'कृपया दोबारा प्रयास करें।'));
+  rzp.on('payment.failed', function(response) {
+    showError('Payment failed: ' + (response.error.description || 'Please try again.'));
     const payBtn = document.getElementById('pay-submit-btn');
     if (payBtn) {
       payBtn.disabled = false;
@@ -205,7 +176,6 @@ function launchRazorpayCheckout(orderData, customerInfo) {
   rzp.open();
 }
 
-// Sandbox / Demo Simulation for instant testing before live keys
 function simulateDemoPayment(orderData, customerInfo) {
   const modal = document.getElementById('demo-payment-modal');
   if (modal) {
@@ -232,7 +202,6 @@ function simulateDemoPayment(orderData, customerInfo) {
       }
     };
   } else {
-    // Direct simulate
     setTimeout(async () => {
       await verifyPaymentSuccess({
         razorpay_order_id: orderData.orderId,
@@ -245,10 +214,9 @@ function simulateDemoPayment(orderData, customerInfo) {
   }
 }
 
-// Verify Payment and Redirect to Success
 async function verifyPaymentSuccess(verifyPayload) {
   const payBtn = document.getElementById('pay-submit-btn');
-  if (payBtn) payBtn.innerHTML = '🔒 भुगतान सत्यापित हो रहा है...';
+  if (payBtn) payBtn.innerHTML = '🔒 Verifying payment...';
 
   try {
     const res = await fetch('/api/verify-payment', {
@@ -259,10 +227,9 @@ async function verifyPaymentSuccess(verifyPayload) {
 
     const data = await res.json();
     if (!res.ok || !data.success) {
-      throw new Error(data.error || 'सत्यापन असफल रहा।');
+      throw new Error(data.error || 'Payment verification failed.');
     }
 
-    // Store customer details in sessionStorage
     const totalPaid = verifyPayload.includeBump ? 298 : 199;
     sessionStorage.setItem('last_order', JSON.stringify({
       orderId: data.orderId,
@@ -274,12 +241,10 @@ async function verifyPaymentSuccess(verifyPayload) {
       bonusDownloadUrl: data.bonusDownloadUrl
     }));
 
-    // Redirect to Success Page with secure download tokens
     window.location.href = `/success?order_id=${encodeURIComponent(data.orderId)}&payment_id=${encodeURIComponent(data.paymentId)}&download_url=${encodeURIComponent(data.downloadUrl)}&bonus_url=${encodeURIComponent(data.bonusDownloadUrl)}`;
-
   } catch (err) {
     console.error('Verification failed:', err);
-    showError(err.message || 'भुगतान सत्यापन में त्रुटि।');
+    showError(err.message || 'There was an error verifying your payment.');
     if (payBtn) {
       payBtn.disabled = false;
       updatePriceDisplay();
@@ -299,7 +264,5 @@ function showError(msg) {
 
 function hideError() {
   const errorAlert = document.getElementById('checkout-error');
-  if (errorAlert) {
-    errorAlert.style.display = 'none';
-  }
+  if (errorAlert) errorAlert.style.display = 'none';
 }

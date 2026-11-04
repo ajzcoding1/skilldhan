@@ -75,7 +75,6 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
-<<<<<<< HEAD
 // CORS Configuration with strict domain validation (prevents prefix spoofing)
 app.use(cors({
   origin: (origin, callback) => {
@@ -94,18 +93,6 @@ app.use(cors({
       }
     } catch {
       // Invalid URL format
-=======
-// CORS Configuration
-app.use(cors({
-  origin: (origin, callback) => {
-    // In development or when no origin (like mobile/same origin), allow
-    if (!origin || process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-    // In production, match SITE_URL
-    if (origin.startsWith(SITE_URL)) {
-      return callback(null, true);
->>>>>>> origin/main
     }
     return callback(new Error('CORS block by security policy'));
   },
@@ -124,7 +111,7 @@ const generalLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'बहुत अधिक अनुरोध (Too many requests). कृपया 15 मिनट बाद पुनः प्रयास करें।' }
+  message: { error: 'Too many requests. Please try again in 15 minutes.' }
 });
 
 const paymentLimiter = rateLimit({
@@ -132,7 +119,7 @@ const paymentLimiter = rateLimit({
   max: 35, // max 35 order creation/verifications per IP per 15 min
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'सुरक्षा सीमा: बहुत अधिक ऑर्डर प्रयास। कृपया कुछ मिनट प्रतीक्षा करें।' }
+  message: { error: 'Order attempt limit reached. Please try again later.' }
 });
 
 const downloadLimiter = rateLimit({
@@ -140,7 +127,7 @@ const downloadLimiter = rateLimit({
   max: 20, // max 20 download attempts per hour
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'डाउनलोड सीमा पार हो गई है। कृपया सहायता के लिए व्हाट्सएप सपोर्ट से संपर्क करें।'
+  message: 'Download limit reached. Please try again later or contact support.'
 });
 
 app.use(generalLimiter);
@@ -178,13 +165,8 @@ function saveOrder(order) {
     } else {
       orders.push({ ...order, createdAt: new Date().toISOString() });
     }
-<<<<<<< HEAD
     // Atomic file write using unique temporary file to prevent collision on high concurrency
     const tempFile = path.join(__dirname, `.orders_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.tmp`);
-=======
-    // Atomic file write using temporary file to prevent corruption on crash
-    const tempFile = `${DB_FILE}.${Date.now()}.tmp`;
->>>>>>> origin/main
     fs.writeFileSync(tempFile, JSON.stringify(orders, null, 2), 'utf8');
     fs.renameSync(tempFile, DB_FILE);
     return true;
@@ -221,7 +203,7 @@ if (!isDemoMode) {
 
 // Product configuration
 const PRODUCT_CONFIG = {
-  name: process.env.PRODUCT_NAME || 'AI की मदद से अपना पहला डिजिटल बिज़नेस',
+  name: process.env.PRODUCT_NAME || 'Start Your First Digital Business with AI',
   price: parseInt(process.env.PRODUCT_PRICE || '199', 10),
   mrp: parseInt(process.env.PRODUCT_MRP || '999', 10),
   currency: process.env.PRODUCT_CURRENCY || 'INR',
@@ -231,15 +213,8 @@ const PRODUCT_CONFIG = {
     price: parseInt(process.env.ORDER_BUMP_PRICE || '99', 10)
   },
   support: {
-<<<<<<< HEAD
     email: process.env.SUPPORT_EMAIL || 'support@skilldhan.shop',
-    whatsapp: process.env.SUPPORT_WHATSAPP || '+919876543210',
     storeName: process.env.STORE_NAME || 'Skilldhan'
-=======
-    email: process.env.SUPPORT_EMAIL || 'support@mydigitalstore.com',
-    whatsapp: process.env.SUPPORT_WHATSAPP || '+919876543210',
-    storeName: process.env.STORE_NAME || 'DigitalGuru AI'
->>>>>>> origin/main
   },
   tracking: {
     gaMeasurementId: (process.env.GA_MEASUREMENT_ID || '').trim(),
@@ -298,16 +273,16 @@ app.post('/api/create-order', paymentLimiter, async (req, res) => {
     // Strict Validations
     const cleanName = sanitizeString(rawName, 60);
     if (!cleanName || cleanName.length < 2) {
-      return res.status(400).json({ error: 'कृपया अपना सही नाम दर्ज करें (2 से 60 अक्षर)।' });
+      return res.status(400).json({ error: 'Please enter a valid name (2 to 60 characters).'});
     }
 
     if (!isValidEmail(rawEmail)) {
-      return res.status(400).json({ error: 'कृपया एक वैध ईमेल पता दर्ज करें (Valid email required).' });
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
     }
     const cleanEmail = rawEmail.trim().toLowerCase();
 
     if (!isValidIndianPhone(rawPhone)) {
-      return res.status(400).json({ error: 'कृपया 10 अंकों का वैध व्हाट्सएप मोबाइल नंबर दर्ज करें (Starts with 6-9).' });
+      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.' });
     }
     const cleanPhone = rawPhone.replace(/\D/g, '');
 
@@ -372,7 +347,7 @@ app.post('/api/create-order', paymentLimiter, async (req, res) => {
   } catch (err) {
     console.error('Order creation error:', err.message);
     res.status(500).json({
-      error: 'ऑर्डर बनाने में समस्या हुई। कृपया पुनः प्रयास करें।',
+      error: 'Could not create the order. Please try again.',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
@@ -390,17 +365,16 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
     } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id) {
-      return res.status(400).json({ error: 'भुगतान विवरण गायब है (Payment details missing).' });
+      return res.status(400).json({ error: 'Payment details are missing.' });
     }
 
     // Basic format validation
     if (!/^[a-zA-Z0-9_-]{8,80}$/.test(razorpay_order_id) || !/^[a-zA-Z0-9_-]{8,80}$/.test(razorpay_payment_id)) {
-      return res.status(400).json({ error: 'अमान्य ऑर्डर या पेमेंट आईडी फॉर्मेट।' });
+      return res.status(400).json({ error: 'Invalid order or payment ID format.' });
     }
 
     let isValid = false;
 
-<<<<<<< HEAD
     if (isDemoMode) {
       // Sandbox / Demo mode: allow simulated order verification
       isValid = razorpay_order_id.startsWith('order_demo_');
@@ -408,17 +382,12 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
       // Live Production Mode: demo order prefix is strictly blocked to prevent free download bypass
       if (razorpay_order_id.startsWith('order_demo_')) {
         console.warn(`🚨 Security Alert: Blocked simulated demo orderId in LIVE production mode. IP: ${req.ip}`);
-        return res.status(403).json({ success: false, error: 'सुरक्षा प्रतिबंध: लाइव मोड में डेमो ऑर्डर स्वीकार्य नहीं हैं।' });
+        return res.status(403).json({ success: false, error: 'Demo orders are not accepted in live mode.' });
       }
 
-=======
-    if (isDemoMode || razorpay_order_id.startsWith('order_demo_')) {
-      isValid = true;
-    } else {
->>>>>>> origin/main
       // Timing-safe HMAC SHA-256 verification
       if (!razorpay_signature || typeof razorpay_signature !== 'string') {
-        return res.status(400).json({ success: false, error: 'सिग्नेचर अनुपलब्ध है।' });
+        return res.status(400).json({ success: false, error: 'Payment signature is missing.' });
       }
 
       const body = razorpay_order_id + '|' + razorpay_payment_id;
@@ -441,7 +410,7 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
       console.warn(`🚨 Security Alert: Failed signature verification attempt for Order: ${razorpay_order_id}`);
       return res.status(400).json({ 
         success: false, 
-        error: 'भुगतान सत्यापन असफल रहा (Signature verification failed)' 
+        error: 'Payment verification failed.'
       });
     }
 
@@ -473,7 +442,7 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
 
     res.json({
       success: true,
-      message: 'भुगतान सफल रहा! आपकी ई-बुक तैयार है।',
+      message: 'Payment successful. Your eBook is ready.',
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       downloadUrl: `/api/download?orderId=${encodeURIComponent(razorpay_order_id)}&token=${downloadToken}`,
@@ -483,7 +452,7 @@ app.post('/api/verify-payment', paymentLimiter, (req, res) => {
   } catch (err) {
     console.error('Payment verification error:', err.message);
     res.status(500).json({
-      error: 'भुगतान की पुष्टि करने में समस्या आई।',
+      error: 'There was a problem confirming your payment.',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
@@ -495,12 +464,12 @@ app.get('/api/download', downloadLimiter, (req, res) => {
   const token = req.query.token;
 
   if (!orderId || !token) {
-    return res.status(400).send('डाउनलोड टोकन या ऑर्डर आईडी गायब है।');
+    return res.status(400).send('Download token or order ID is missing.');
   }
 
   // Prevent directory traversal or regex injections
   if (!/^[a-zA-Z0-9_-]{8,80}$/.test(orderId) || !/^[a-zA-Z0-9]{32,80}$/.test(token)) {
-    return res.status(400).send('अमान्य डाउनलोड लिंक।');
+    return res.status(400).send('Invalid download link.');
   }
 
   const orders = getOrders();
@@ -508,32 +477,25 @@ app.get('/api/download', downloadLimiter, (req, res) => {
 
   // Validate paid status
   if (!order || order.status !== 'paid') {
-    return res.status(403).send('डाउनलोड अनुमति नहीं है: वैध भुगतान नहीं मिला।');
+    return res.status(403).send('Download not authorized: no valid payment found.');
   }
 
   // Verify secure token
   if (order.downloadToken !== token) {
-    return res.status(403).send('अमान्य या समाप्त सुरक्षा टोकन। कृपया सपोर्ट से संपर्क करें।');
+    return res.status(403).send('Invalid or expired security token. Please contact support.');
   }
 
-<<<<<<< HEAD
   // Verify expiry time (72 hours limit)
-=======
-  // Verify expiry time
->>>>>>> origin/main
   if (order.tokenExpiry && Date.now() > order.tokenExpiry) {
-    return res.status(403).send('यह डाउनलोड लिंक 72 घंटे बाद समाप्त हो चुका है। नया लिंक प्राप्त करने के लिए सपोर्ट पर लिखें।');
+    return res.status(403).send('This download link expired after 72 hours. Contact support for assistance.');
   }
 
-<<<<<<< HEAD
   // Enforce maximum download limit (Anti-piracy / anti-sharing)
   const maxAllowed = order.maxDownloads || 10;
   if ((order.downloadCount || 0) >= maxAllowed) {
-    return res.status(403).send(`अधिकतम डाउनलोड सीमा (${maxAllowed} बार) पार हो चुकी है। नया लिंक प्राप्त करने के लिए कृपया सपोर्ट से संपर्क करें।`);
+    return res.status(403).send(`Maximum download limit (${maxAllowed}) reached. Contact support for assistance.`);
   }
 
-=======
->>>>>>> origin/main
   // Increment download counter
   order.downloadCount = (order.downloadCount || 0) + 1;
   saveOrder(order);
@@ -546,7 +508,7 @@ app.get('/api/download', downloadLimiter, (req, res) => {
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   } else {
-    res.status(404).send('फाइल सर्वर पर नहीं मिली। कृपया एडमिन से संपर्क करें।');
+    res.status(404).send('File not found on the server. Please contact the administrator.');
   }
 });
 
@@ -556,33 +518,30 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
   const token = req.query.token;
 
   if (!orderId || !token || !/^[a-zA-Z0-9_-]{8,80}$/.test(orderId) || !/^[a-zA-Z0-9]{32,80}$/.test(token)) {
-    return res.status(400).send('अमान्य बोनस डाउनलोड अनुरोध।');
+    return res.status(400).send('Invalid bonus download request.');
   }
 
   const orders = getOrders();
   const order = orders.find(o => o.orderId === orderId);
 
   if (!order || order.status !== 'paid' || order.downloadToken !== token) {
-    return res.status(403).send('बोनस डाउनलोड अनुमति नहीं है।');
+    return res.status(403).send('Bonus download not authorized.');
   }
 
-<<<<<<< HEAD
   // Verify expiry time (72 hours limit)
   if (order.tokenExpiry && Date.now() > order.tokenExpiry) {
-    return res.status(403).send('यह बोनस डाउनलोड लिंक 72 घंटे बाद समाप्त हो चुका है।');
+    return res.status(403).send('This bonus download link expired after 72 hours.');
   }
 
   // Enforce maximum download limit on bonus
   const maxAllowed = order.maxDownloads || 10;
   if ((order.bonusDownloadCount || 0) >= maxAllowed) {
-    return res.status(403).send(`अधिकतम बोनस डाउनलोड सीमा (${maxAllowed} बार) पार हो चुकी है।`);
+    return res.status(403).send(`Maximum bonus download limit (${maxAllowed}) reached.`);
   }
 
   order.bonusDownloadCount = (order.bonusDownloadCount || 0) + 1;
   saveOrder(order);
 
-=======
->>>>>>> origin/main
   const filePath = path.join(__dirname, 'downloads', '100-AI-Prompts-Vault.pdf');
   if (fs.existsSync(filePath)) {
     res.setHeader('Content-Type', 'application/pdf');
@@ -591,11 +550,10 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   } else {
-    res.status(404).send('फाइल सर्वर पर नहीं मिली।');
+    res.status(404).send('File not found on the server.');
   }
 });
 
-<<<<<<< HEAD
 // Timing-safe comparison to prevent side-channel timing attacks
 function safeCompareAdminKey(providedKey, expectedKey) {
   if (typeof providedKey !== 'string' || typeof expectedKey !== 'string') return false;
@@ -608,14 +566,11 @@ function safeCompareAdminKey(providedKey, expectedKey) {
   return crypto.timingSafeEqual(provBuf, expBuf);
 }
 
-=======
->>>>>>> origin/main
 // 6. PROTECTED Admin Orders Endpoint (Requires Secret Admin Key)
 app.get('/api/orders', (req, res) => {
   const authHeader = req.headers.authorization || '';
   const queryKey = req.query.key || '';
 
-<<<<<<< HEAD
   let clientKey = '';
   if (authHeader.startsWith('Bearer ')) {
     clientKey = authHeader.slice(7);
@@ -628,16 +583,7 @@ app.get('/api/orders', (req, res) => {
   if (!isAuthorized) {
     // Return 403 Forbidden to protect customer PII data
     return res.status(403).json({
-      error: 'सुरक्षा प्रतिबंध: अनधिकृत पहुंच (Unauthorized). व्यवस्थापक कुंजी अमान्य है।'
-=======
-  const isBearerAuthorized = authHeader === `Bearer ${ADMIN_SECRET_KEY}`;
-  const isQueryAuthorized = queryKey === ADMIN_SECRET_KEY;
-
-  if (!isBearerAuthorized && !isQueryAuthorized) {
-    // Return 403 Forbidden to protect customer PII data
-    return res.status(403).json({
-      error: 'सुरक्षा प्रतिबंध: अनधिकृत पहुंच (Unauthorized). व्यवस्थापक कुंजी आवश्यक है।'
->>>>>>> origin/main
+      error: 'Access denied. The administrator key is invalid.'
     });
   }
 
@@ -715,18 +661,15 @@ app.get('/privacy', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
 });
 
-<<<<<<< HEAD
 // Global Error Handler: Prevents leaking stack traces or internal implementation details
 app.use((err, req, res, next) => {
   if (err.message === 'CORS block by security policy') {
-    return res.status(403).json({ error: 'सुरक्षा नीति: इस डोमेन से अनुरोध अस्वीकृत है (CORS block).' });
+    return res.status(403).json({ error: 'Request blocked by the cross-origin security policy.' });
   }
   console.error('Unhandled Server Error:', err.message);
-  res.status(500).json({ error: 'आंतरिक सर्वर त्रुटि (Internal Server Error)' });
+  res.status(500).json({ error: 'Internal server error.' });
 });
 
-=======
->>>>>>> origin/main
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
