@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Successful | Download Your eBook | Skilldhan</title>
-  <meta name="description" content="Your payment was successful. Download your AI Digital Business eBook and included bonuses.">
+  <meta name="description" content="Your payment was successful. Download your AI Digital Business eBook and any purchased extras.">
   <meta name="robots" content="noindex, nofollow">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_IN">
   <meta property="og:site_name" content="Skilldhan">
   <meta property="og:title" content="Your eBook Download | Skilldhan">
-  <meta property="og:description" content="Access your digital business eBook and included bonuses from your order confirmation page.">
+  <meta property="og:description" content="Access your digital business eBook and any purchased extras from your order confirmation page.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2226%22 font-size=%2224%22>🎉</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,7 +42,7 @@
       </h1>
       
       <p id="delivery-instructions" style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 30px auto;">
-        Use the buttons below to download your eBook and included bonuses.
+        Your eBook is ready. Any purchased extras will appear below.
       </p>
 
       <!-- Order Info Box -->
@@ -78,14 +78,14 @@
         </div>
 
         <!-- Bonus Bundle Card -->
-        <div class="download-card" style="border-color: rgba(99, 102, 241, 0.4);">
+        <div id="bonus-download-card" class="download-card" style="display:none; border-color: rgba(99, 102, 241, 0.4);">
           <div>
             <div style="font-size:0.8rem; font-weight:800; color:#818cf8; text-transform:uppercase; margin-bottom:4px;">Bonus resource</div>
-            <h4>100+ Master ChatGPT Prompts (PDF)</h4>
-            <p>Ready-to-use prompts for digital products and marketing.</p>
+            <h4>Exclusive AI Prompt Vault (ZIP)</h4>
+            <p>Download your complete bundle of ready-to-use prompts.</p>
           </div>
           <a href="#" id="bonus-download-btn" class="btn btn-primary btn-block" style="padding: 14px;">
-            🎁 Download bonus (PDF)
+            🎁 Download Prompt Vault (ZIP)
           </a>
         </div>
 
@@ -143,6 +143,7 @@
       const payEl     = document.getElementById('display-payment-id');
       const mainBtn   = document.getElementById('main-download-btn');
       const bonusBtn  = document.getElementById('bonus-download-btn');
+      const bonusCard = document.getElementById('bonus-download-card');
       const downloadStatus = document.getElementById('download-status');
       const deliveryInstructions = document.getElementById('delivery-instructions');
 
@@ -181,7 +182,7 @@
             downloadStatus.hidden = false;
           }
           if (deliveryInstructions) {
-            deliveryInstructions.textContent = 'Your eBook download will start automatically. Included bonuses are available from the download buttons below.';
+            deliveryInstructions.textContent = 'Your eBook download will start automatically. Any purchased extras are available from the download buttons below.';
           }
 
           window.setTimeout(() => mainBtn.click(), 500);
@@ -195,8 +196,9 @@
 
       if (bonusBtn && isSafeDownloadUrl(finalBonusUrl, '/api/download-bonus?')) {
         bonusBtn.href = finalBonusUrl;
-      } else if (bonusBtn) {
-        bonusBtn.style.display = 'none';
+        if (bonusCard) bonusCard.style.display = '';
+      } else if (bonusCard) {
+        bonusCard.style.display = 'none';
       }
 
       // Fire Purchase tracking event (GA4 + Meta Pixel)

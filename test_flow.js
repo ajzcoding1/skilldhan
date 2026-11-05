@@ -90,6 +90,13 @@ async function runTests() {
   assert('Content-Type is PDF', dlRes.headers['content-type']?.includes('pdf'), `got ${dlRes.headers['content-type']}`);
   assert('X-Content-Type-Options set', dlRes.headers['x-content-type-options'] === 'nosniff');
 
+  // ── 6b. Purchased bonus download ─────────────────
+  console.log('\n⑥b /api/download-bonus  [order bump purchased]');
+  const bonusRes = await request({ host: 'localhost', port: 3000, path: bonusUrl, method: 'GET' });
+  assert('Returns 200 for purchased bonus', bonusRes.status === 200, `got ${bonusRes.status}`);
+  assert('Content-Type is ZIP', bonusRes.headers['content-type']?.includes('zip'), `got ${bonusRes.headers['content-type']}`);
+  assert('Download filename is ZIP', bonusRes.headers['content-disposition']?.includes('.zip'));
+
   // ── 7. Download with WRONG token (security check) ───
   console.log('\n⑦ /api/download  [wrong/fake token — must block]');
   const fakeUrl = `/api/download?orderId=${encodeURIComponent(orderId)}&token=fakebadtoken0000000000000000000000`;
@@ -140,6 +147,29 @@ async function runTests() {
   assert('Checkout has noindex', checkout.raw?.includes('noindex'));
   const success = await request({ host: 'localhost', port: 3000, path: '/success', method: 'GET' });
   assert('Success /success serves 200', success.status === 200);
+
+  // ── 14. Base product without order bump ──────────
+  console.log('\n⑭ /api/verify-payment  [no order bump]');
+  const baseOrderRes = await request(
+    { host: 'localhost', port: 3000, path: '/api/create-order', method: 'POST', headers: { 'Content-Type': 'application/json' } },
+    { name: 'Priya Sharma', email: 'priya@example.com', phone: '9876543210', includeBump: false }
+  );
+  assert('Creates base-product order at ₹199', baseOrderRes.status === 200 && baseOrderRes.data.amount === 19900);
+  const baseOrderId = baseOrderRes.data.orderId;
+  const baseVerifyRes = await request(
+    { host: 'localhost', port: 3000, path: '/api/verify-payment', method: 'POST', headers: { 'Content-Type': 'application/json' } },
+    { razorpay_order_id: baseOrderId, razorpay_payment_id: 'pay_test_BASE123456', razorpay_signature: 'demo_sig' }
+  );
+  assert('Returns main PDF link without bonus link', baseVerifyRes.status === 200 &&
+    typeof baseVerifyRes.data.downloadUrl === 'string' && !baseVerifyRes.data.bonusDownloadUrl);
+  const baseToken = new URL(baseVerifyRes.data.downloadUrl, 'http://localhost').searchParams.get('token');
+  const unauthorizedBonus = await request({
+    host: 'localhost',
+    port: 3000,
+    path: `/api/download-bonus?orderId=${encodeURIComponent(baseOrderId)}&token=${encodeURIComponent(baseToken)}`,
+    method: 'GET'
+  });
+  assert('Blocks bonus download when order bump was not purchased', unauthorizedBonus.status === 403);
 
   // ── Summary ───────────────────────────────────────
   console.log('\n══════════════════════════════════════════');

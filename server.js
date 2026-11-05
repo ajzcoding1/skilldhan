@@ -227,7 +227,7 @@ if (!isDemoMode && !RAZORPAY_KEY_ID.startsWith('rzp_test_') && !RAZORPAY_KEY_ID.
 }
 
 const MAIN_DOWNLOAD_FILE = path.join(__dirname, 'downloads', 'AI-Digital-Business-Guide.pdf');
-const BONUS_DOWNLOAD_FILE = path.join(__dirname, 'downloads', 'full_kit', '03_100_Premium_AI_Prompts.pdf');
+const BONUS_DOWNLOAD_FILE = path.join(__dirname, 'downloads', 'full_kit.zip');
 if (IS_PRODUCTION && (!fs.existsSync(MAIN_DOWNLOAD_FILE) || !fs.existsSync(BONUS_DOWNLOAD_FILE))) {
   throw new Error('Production download files are missing. Check the downloads directory before starting the store.');
 }
@@ -349,7 +349,7 @@ app.post('/api/create-order', paymentLimiter, async (req, res) => {
     const rawName = req.body.name;
     const rawEmail = req.body.email;
     const rawPhone = req.body.phone;
-    const includeBump = req.body.includeBump === true;
+    const includeBump = req.body.includeBump === true && PRODUCT_CONFIG.orderBump.enabled;
 
     // Strict Validations
     const cleanName = sanitizeString(rawName, 60);
@@ -486,7 +486,9 @@ app.post('/api/verify-payment', paymentLimiter, async (req, res) => {
         paymentId: razorpay_payment_id,
         amount: pendingOrder.amount,
         downloadUrl: `/api/download?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`,
-        bonusDownloadUrl: `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`
+        bonusDownloadUrl: pendingOrder.includeBump
+          ? `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`
+          : null
       });
     }
 
@@ -553,7 +555,9 @@ app.post('/api/verify-payment', paymentLimiter, async (req, res) => {
         paymentId: razorpay_payment_id,
         amount: pendingOrder.amount,
         downloadUrl: `/api/download?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`,
-        bonusDownloadUrl: `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`
+        bonusDownloadUrl: pendingOrder.includeBump
+          ? `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${pendingOrder.downloadToken}`
+          : null
       });
     }
     if (pendingOrder.status !== 'pending') {
@@ -592,7 +596,9 @@ app.post('/api/verify-payment', paymentLimiter, async (req, res) => {
       paymentId: razorpay_payment_id,
       amount: pendingOrder.amount,
       downloadUrl: `/api/download?orderId=${encodeURIComponent(razorpay_order_id)}&token=${downloadToken}`,
-      bonusDownloadUrl: `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${downloadToken}`
+      bonusDownloadUrl: pendingOrder.includeBump
+        ? `/api/download-bonus?orderId=${encodeURIComponent(razorpay_order_id)}&token=${downloadToken}`
+        : null
     });
 
   } catch (err) {
@@ -666,7 +672,7 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
   const orders = getOrders();
   const order = orders.find(o => o.orderId === orderId);
 
-  if (!order || order.status !== 'paid' || !matchesDownloadToken(order.downloadToken, token)) {
+  if (!order || order.status !== 'paid' || !order.includeBump || !matchesDownloadToken(order.downloadToken, token)) {
     return res.status(403).send('Bonus download not authorized.');
   }
 
@@ -689,7 +695,7 @@ app.get('/api/download-bonus', downloadLimiter, (req, res) => {
     return res.status(500).send('Could not authorize the bonus download. Please try again or contact support.');
   }
 
-  sendPaidDownload(res, BONUS_DOWNLOAD_FILE, '100-AI-Prompts-Vault.pdf');
+  sendPaidDownload(res, BONUS_DOWNLOAD_FILE, 'Exclusive-AI-Prompt-Vault.zip');
 });
 
 function sendPaidDownload(res, filePath, filename) {
