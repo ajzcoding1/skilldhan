@@ -319,6 +319,30 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+app.get('/api/recent-purchases', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  if (!IS_PRODUCTION) {
+    return res.json({ purchases: [] });
+  }
+
+  const recentCutoff = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const purchases = getOrders()
+    .filter(order =>
+      order.status === 'paid' &&
+      order.isDemoMode === false &&
+      order.paymentEnvironment === 'live' &&
+      typeof order.paidAt === 'string' &&
+      Number.isFinite(Date.parse(order.paidAt)) &&
+      Date.parse(order.paidAt) >= recentCutoff
+    )
+    .sort((a, b) => Date.parse(b.paidAt) - Date.parse(a.paidAt))
+    .slice(0, 8)
+    .map(order => ({ paidAt: order.paidAt }));
+
+  res.json({ purchases });
+});
+
 // 2. Create Order with Strict Input Validation & Server-Side Pricing Enforced
 app.post('/api/create-order', paymentLimiter, async (req, res) => {
   try {

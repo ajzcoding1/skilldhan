@@ -1412,6 +1412,111 @@ h1, h2, h3, h4 {
   border-radius: var(--radius-md);
 }
 
+.buyer-toast {
+  position: fixed;
+  z-index: 1000;
+  left: max(20px, env(safe-area-inset-left));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(390px, calc(100vw - 32px));
+  padding: 14px 42px 14px 14px;
+  color: var(--text-main);
+  background: #111827;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: buyer-toast-in 0.35s ease-out;
+}
+
+.buyer-toast[hidden] {
+  display: none;
+}
+
+.buyer-toast-avatar {
+  display: grid;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #111827;
+  background: var(--gold-gradient);
+  border-radius: 50%;
+  font-weight: 800;
+}
+
+.buyer-toast-content {
+  min-width: 0;
+}
+
+.buyer-toast-verified {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 2px 6px;
+  color: #052e25;
+  background: #6ee7b7;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.buyer-toast-content p {
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.buyer-toast-cta {
+  display: inline-block;
+  margin-top: 7px;
+  color: #fbbf24;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.buyer-toast-cta[hidden] {
+  display: none;
+}
+
+.buyer-toast-caption {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.buyer-toast-close {
+  position: absolute;
+  top: 7px;
+  right: 9px;
+  padding: 0 4px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.buyer-toast-close:hover {
+  color: #fff;
+}
+
+@keyframes buyer-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -1428,5 +1533,9 @@ h1, h2, h3, h4 {
   .fade-up {
     opacity: 1;
     transform: none;
+  }
+
+  .buyer-toast {
+    animation: none;
   }
 }

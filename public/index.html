@@ -36,7 +36,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
-  <link rel="stylesheet" href="/css/style.css?v=20261104-live">
+  <link rel="stylesheet" href="/css/style.css?v=20261105-offer-fallback">
 
   <!-- Schema.org JSON-LD Structured Data for Rich Search Results -->
   <script type="application/ld+json">
@@ -623,9 +623,20 @@
     </div>
   </footer>
 
+  <aside id="buyer-toast" class="buyer-toast" role="status" aria-live="polite" aria-atomic="true" hidden>
+    <div class="buyer-toast-avatar" aria-hidden="true">✓</div>
+    <div class="buyer-toast-content">
+      <span class="buyer-toast-verified" id="buyer-toast-label">Verified purchase</span>
+      <p id="buyer-toast-message">A customer purchased the AI Digital Business Guide</p>
+      <span class="buyer-toast-caption" id="buyer-toast-time"></span>
+      <a class="buyer-toast-cta" id="buyer-toast-cta" href="/checkout" hidden>View the guide</a>
+    </div>
+    <button class="buyer-toast-close" type="button" aria-label="Dismiss purchase notification">&times;</button>
+  </aside>
+
   <!-- Scripts -->
   <script src="/js/tracking.js"></script>
-  <script src="/js/landing.js?v=20261104-live"></script>
+  <script src="/js/landing.js?v=20261105-offer-fallback"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (window.StoreTracking) {
