@@ -42,7 +42,7 @@ window.StoreTracking = (function() {
     window.gtag = gtag;
 
     gtag('js', new Date());
-    gtag('config', id, { send_page_view: true });
+    gtag('config', id, { send_page_view: false });
 
     const script = document.createElement('script');
     script.async = true;
@@ -65,7 +65,6 @@ window.StoreTracking = (function() {
     'https://connect.facebook.net/en_US/fbevents.js');
 
     window.fbq('init', pixelId);
-    window.fbq('track', 'PageView');
     console.log('✅ Meta Pixel Active:', pixelId);
   }
 

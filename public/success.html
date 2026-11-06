@@ -120,22 +120,20 @@
     document.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
 
-      // Read secure tokenized URLs passed from checkout
-      const orderId    = urlParams.get('order_id')    || '';
-      const paymentId  = urlParams.get('payment_id')  || '';
-      const downloadUrl  = urlParams.get('download_url')  || '';
-      const bonusUrl     = urlParams.get('bonus_url')     || '';
+      // Read only non-sensitive order identifiers in the URL.
+      const orderId = urlParams.get('order_id') || '';
+      const paymentId = urlParams.get('payment_id') || '';
 
-      // Also check sessionStorage as fallback
+      // Keep secure tokenized URLs in sessionStorage instead of the URL query string.
       let sessionOrder = {};
       try {
-        sessionOrder = JSON.parse(sessionStorage.getItem('last_order') || '{}');
+        sessionOrder = JSON.parse(sessionStorage.getItem('last_order') || sessionStorage.getItem('last_success_order') || '{}');
       } catch (e) {}
 
-      const finalOrderId    = orderId    || sessionOrder.orderId    || 'ORD-UNKNOWN';
-      const finalPaymentId  = paymentId  || sessionOrder.paymentId  || 'PAY-UNKNOWN';
-      const finalDownloadUrl  = downloadUrl  || sessionOrder.downloadUrl  || '#';
-      const finalBonusUrl     = bonusUrl     || sessionOrder.bonusDownloadUrl || '#';
+      const finalOrderId = orderId || sessionOrder.orderId || 'ORD-UNKNOWN';
+      const finalPaymentId = paymentId || sessionOrder.paymentId || 'PAY-UNKNOWN';
+      const finalDownloadUrl = sessionOrder.downloadUrl || '#';
+      const finalBonusUrl = sessionOrder.bonusDownloadUrl || '#';
       const totalPaid = sessionOrder.totalPaid || 199;
 
       // Display order info
@@ -160,7 +158,7 @@
       // Use secure tokenized download URLs with strict validation
       if (mainBtn && isSafeDownloadUrl(finalDownloadUrl, '/api/download?')) {
         mainBtn.href = finalDownloadUrl;
-        const cameFromCheckout = Boolean(orderId && paymentId && downloadUrl);
+        const cameFromCheckout = Boolean(orderId && paymentId && finalDownloadUrl && finalDownloadUrl !== '#');
         const downloadKey = `auto-download-started-${finalOrderId}`;
         let alreadyStarted = false;
 
@@ -206,8 +204,9 @@
         window.StoreTracking.trackPurchase(finalOrderId, totalPaid, 'INR');
       }
 
-      // Clear session storage after use
+      // Clear sensitive success-order session data after use.
       sessionStorage.removeItem('last_order');
+      sessionStorage.removeItem('last_success_order');
     });
   </script>
 </body>

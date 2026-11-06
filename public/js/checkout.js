@@ -289,7 +289,14 @@ async function verifyPaymentSuccess(verifyPayload) {
       bonusDownloadUrl: data.bonusDownloadUrl
     }));
 
-    window.location.href = `/success?order_id=${encodeURIComponent(data.orderId)}&payment_id=${encodeURIComponent(data.paymentId)}&download_url=${encodeURIComponent(data.downloadUrl)}&bonus_url=${encodeURIComponent(data.bonusDownloadUrl || '')}`;
+    sessionStorage.setItem('last_success_order', JSON.stringify({
+      orderId: data.orderId,
+      paymentId: data.paymentId,
+      downloadUrl: data.downloadUrl,
+      bonusDownloadUrl: data.bonusDownloadUrl || ''
+    }));
+
+    window.location.href = `/success?order_id=${encodeURIComponent(data.orderId)}&payment_id=${encodeURIComponent(data.paymentId)}`;
   } catch (err) {
     console.error('Verification failed:', err);
     showError(err.message || 'There was an error verifying your payment.');
