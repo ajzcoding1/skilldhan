@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Secure Checkout | AI Digital Business eBook (₹199)</title>
-  <meta name="description" content="Secure checkout for the AI Digital Business eBook and four included bonuses. Payments are processed by Razorpay.">
+  <title>Checkout | AI Digital Business Guide | Skilldhan</title>
+  <meta name="description" content="Secure checkout for the AI Digital Business Guide and prompt PDF. The total is shown before you pay.">
   <meta name="robots" content="noindex, nofollow">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_IN">
   <meta property="og:site_name" content="Skilldhan">
   <meta property="og:title" content="Secure Checkout | AI Digital Business eBook | Skilldhan">
-  <meta property="og:description" content="Complete your secure checkout for the AI Digital Business eBook. Payments are processed by Razorpay.">
+  <meta property="og:description" content="Complete checkout for the AI Digital Business Guide and prompt PDF. The total is shown before you pay.">
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2226%22 font-size=%2224%22>🔒</text></svg>">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
-  <link rel="stylesheet" href="/css/style.css?v=20261107-checkout">
+  <link rel="stylesheet" href="/css/style.css?v=20261107-human-copy">
 </head>
 <body style="background-color: var(--bg-primary);">
 
@@ -72,19 +72,19 @@
             <small id="cust-phone-help" style="color: var(--text-dim); font-size:0.78rem; display:block; margin-top:4px;">Enter a valid 10-digit Indian mobile number.</small>
           </div>
 
-          <!-- Order Bump (Value Booster) -->
+          <!-- Optional add-on -->
           <label class="order-bump-box">
             <div class="bump-check-wrap">
               <input type="checkbox" id="bump-checkbox" class="bump-checkbox">
               <div>
-                <div class="bump-title" id="bump-title">⚡ Add the 500+ Master AI Prompt Vault for just ₹99</div>
-                <div class="bump-desc">Get ready-to-use prompts for social media marketing, sales funnels, and automation. (Regular price: ₹1,499)</div>
+                <div class="bump-title" id="bump-title">Add the optional AI prompt pack</div>
+                <div class="bump-desc">Optional downloadable ZIP. Its price and updated total will be shown before payment; the ZIP link appears after successful payment.</div>
               </div>
             </div>
           </label>
 
           <!-- Razorpay Pay Button -->
-          <button type="submit" id="pay-submit-btn" class="btn btn-gold btn-block btn-pulse" style="font-size:1.15rem; padding: 18px 24px;">
+          <button type="submit" id="pay-submit-btn" class="btn btn-gold btn-block" style="font-size:1.15rem; padding: 18px 24px;">
             <span id="pay-btn-text">🔒 Pay now - ₹199 (secure checkout)</span>
           </button>
 
@@ -117,7 +117,7 @@
           <img src="/assets/ebook-cover.jpg" alt="AI eBook" class="summary-thumb">
           <div class="summary-details">
             <h3>Start Your First Digital Business with AI</h3>
-            <p class="summary-meta">Complete 30-page guide + four bonus resources</p>
+            <p class="summary-meta">30-page guide + 100+ AI prompts (PDF)</p>
             <div style="margin-top: 6px; font-size: 0.82rem; color: #10b981; font-weight: 700;">
               ✓ Instant access to your digital downloads
             </div>
@@ -126,13 +126,10 @@
 
         <!-- Inclusions Checklist -->
         <div style="background: rgba(0,0,0,0.25); padding: 16px; border-radius: var(--radius-md); margin-bottom: 24px; font-size: 0.85rem;">
-          <div style="font-weight: 700; margin-bottom: 8px; color: #fbbf24;">Included with your purchase:</div>
+          <div style="font-weight: 700; margin-bottom: 8px; color: #fbbf24;">Included in the guide price (<span id="included-price">₹199</span>):</div>
           <ul style="list-style:none; display:flex; flex-direction:column; gap:6px; color:#cbd5e1;">
-            <li>✓ Complete 30-page digital business eBook (PDF)</li>
-            <li>✓ 100+ ready-to-use ChatGPT prompts</li>
-            <li>✓ Canva templates and mockups</li>
-            <li>✓ 30-day launch workbook and checklist</li>
-            <li>✓ Creator support resources</li>
+            <li>✓ 30-page AI Digital Business Guide (PDF)</li>
+            <li>✓ Separate PDF with 100+ AI prompts</li>
           </ul>
         </div>
 
@@ -141,22 +138,13 @@
           <span>Download access is provided after successful payment. No parcel or shipping fee applies.</span>
         </div>
 
-        <!-- Price Breakdown Table -->
         <table class="summary-table">
           <tr>
-            <td>Product price:</td>
-            <td class="val"><strike style="color:var(--text-dim);">₹999</strike></td>
-          </tr>
-          <tr>
-            <td>Four bonus resources:</td>
-            <td class="val"><strike style="color:var(--text-dim);">₹2,999</strike></td>
-          </tr>
-          <tr>
-            <td>Launch discount:</td>
-            <td class="val" style="color: #10b981;">- ₹3,799</td>
+            <td>Guide + prompt PDF:</td>
+            <td class="val" id="summary-base-price">₹199</td>
           </tr>
           <tr id="summary-bump-row" style="display:none;">
-            <td id="summary-bump-title">500+ Master AI Prompt Vault:</td>
+            <td id="summary-bump-title">Optional add-on:</td>
             <td class="val" id="summary-bump-price" style="color: #fbbf24;">+ ₹99</td>
           </tr>
           <tr class="total-row">
@@ -215,6 +203,6 @@
   <!-- Analytics & Event Tracking -->
   <script src="/js/tracking.js"></script>
   <!-- Checkout Interaction Script -->
-  <script src="/js/checkout.js?v=20261107-checkout"></script>
+  <script src="/js/checkout.js?v=20261107-human-copy"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
-  <link rel="stylesheet" href="/css/style.css?v=20261104-live">
+  <link rel="stylesheet" href="/css/style.css?v=20261107-human-copy">
 </head>
 <body style="background-color: var(--bg-primary);">
 
@@ -87,6 +87,7 @@
           <a href="#" id="bonus-download-btn" class="btn btn-primary btn-block" style="padding: 14px;">
             🎁 Download Prompt Vault (ZIP)
           </a>
+          <p id="bonus-download-status" role="status" aria-live="polite" hidden></p>
         </div>
 
       </div>
@@ -135,6 +136,7 @@
       const finalDownloadUrl = sessionOrder.downloadUrl || '#';
       const finalBonusUrl = sessionOrder.bonusDownloadUrl || '#';
       const totalPaid = sessionOrder.totalPaid || 199;
+      const cameFromCheckout = Boolean(orderId && paymentId && finalDownloadUrl && finalDownloadUrl !== '#');
 
       // Display order info
       const orderEl   = document.getElementById('display-order-id');
@@ -143,6 +145,7 @@
       const bonusBtn  = document.getElementById('bonus-download-btn');
       const bonusCard = document.getElementById('bonus-download-card');
       const downloadStatus = document.getElementById('download-status');
+      const bonusDownloadStatus = document.getElementById('bonus-download-status');
       const deliveryInstructions = document.getElementById('delivery-instructions');
 
       if (orderEl)  orderEl.textContent  = finalOrderId;
@@ -158,7 +161,6 @@
       // Use secure tokenized download URLs with strict validation
       if (mainBtn && isSafeDownloadUrl(finalDownloadUrl, '/api/download?')) {
         mainBtn.href = finalDownloadUrl;
-        const cameFromCheckout = Boolean(orderId && paymentId && finalDownloadUrl && finalDownloadUrl !== '#');
         const downloadKey = `auto-download-started-${finalOrderId}`;
         let alreadyStarted = false;
 
@@ -195,8 +197,42 @@
       if (bonusBtn && isSafeDownloadUrl(finalBonusUrl, '/api/download-bonus?')) {
         bonusBtn.href = finalBonusUrl;
         if (bonusCard) bonusCard.style.display = '';
+        const bonusDownloadKey = `auto-bonus-download-started-${finalOrderId}`;
+        let bonusAlreadyStarted = false;
+
+        try {
+          bonusAlreadyStarted = sessionStorage.getItem(bonusDownloadKey) === 'true';
+        } catch (error) {
+          console.warn('Could not check bonus download status:', error);
+        }
+
+        if (cameFromCheckout && !bonusAlreadyStarted) {
+          try {
+            sessionStorage.setItem(bonusDownloadKey, 'true');
+          } catch (error) {
+            console.warn('Could not save bonus download status:', error);
+          }
+
+          if (bonusDownloadStatus) {
+            bonusDownloadStatus.textContent = 'Your ZIP download is starting. If it does not start, use the button above.';
+            bonusDownloadStatus.hidden = false;
+          }
+          window.setTimeout(() => bonusBtn.click(), 1500);
+        } else if (bonusDownloadStatus && bonusAlreadyStarted) {
+          bonusDownloadStatus.textContent = 'To download the ZIP again, use the button above.';
+          bonusDownloadStatus.hidden = false;
+        }
       } else if (bonusCard) {
-        bonusCard.style.display = 'none';
+        if (sessionOrder.includeBump === true) {
+          bonusCard.style.display = '';
+          if (bonusBtn) bonusBtn.style.display = 'none';
+          if (bonusDownloadStatus) {
+            bonusDownloadStatus.textContent = 'We could not prepare the ZIP link. Please email shoppingdebraj@gmail.com with your order ID.';
+            bonusDownloadStatus.hidden = false;
+          }
+        } else {
+          bonusCard.style.display = 'none';
+        }
       }
 
       // Fire Purchase tracking event (GA4 + Meta Pixel)

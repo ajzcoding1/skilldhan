@@ -82,6 +82,10 @@ function updatePriceDisplay() {
 
   const totalEl = document.getElementById('summary-total-price');
   if (totalEl) totalEl.textContent = `₹${finalPrice}`;
+  const basePriceEl = document.getElementById('summary-base-price');
+  if (basePriceEl) basePriceEl.textContent = `₹${basePrice}`;
+  const includedPriceEl = document.getElementById('included-price');
+  if (includedPriceEl) includedPriceEl.textContent = `₹${basePrice}`;
 
   const payBtnText = document.getElementById('pay-btn-text');
   if (payBtnText) payBtnText.textContent = `Pay now - ₹${finalPrice} (secure checkout)`;
@@ -285,6 +289,7 @@ async function verifyPaymentSuccess(verifyPayload) {
       name: verifyPayload.customer?.name,
       email: verifyPayload.customer?.email,
       totalPaid: totalPaid,
+      includeBump: data.includeBump === true,
       downloadUrl: data.downloadUrl,
       bonusDownloadUrl: data.bonusDownloadUrl
     }));
@@ -292,6 +297,7 @@ async function verifyPaymentSuccess(verifyPayload) {
     sessionStorage.setItem('last_success_order', JSON.stringify({
       orderId: data.orderId,
       paymentId: data.paymentId,
+      includeBump: data.includeBump === true,
       downloadUrl: data.downloadUrl,
       bonusDownloadUrl: data.bonusDownloadUrl || ''
     }));

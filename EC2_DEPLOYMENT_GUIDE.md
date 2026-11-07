@@ -15,9 +15,10 @@
 ### इस गाइड में
 - [EC2 instance और network](#step-1-aws-ec2-instance-बनाएं)
 - [सर्वर तैयार करें](#step-2-ec2-सर्वर-में-लॉगिन-करें)
-- [प्रोजेक्ट और environment सेट करें](#step-4-प्रोजेक्ट-फाइल्स-को-ec2-पर-अपलोड-करें)
-- [ऐप, domain और HTTPS चालू करें](#step-6-pm2-के-साथ-ऐप-को-बैकग्राउंड-में-चलाएं)
-- [Webhook और अंतिम जांच](#step-9-razorpay-में-webhook-सेटअप-वैकल्पिक-परंतु-उत्तम)
+- [Project, environment और app setup](#step-4-प्रोजेक्ट-फाइल्स-को-ec2-पर-अपलोड-करें)
+- [Automatic deploy setup](#github-actions-से-automatic-ec2-deploy)
+- [Domain और HTTPS setup](#step-7-nginx-रिवर्स-प्रॉक्सी-और-ssl-https-सेटअप)
+- [Production verification](#टेस्ट-और-अंतिम-जांच)
 
 ---
 
@@ -57,15 +58,26 @@ EC2 टर्मिनल में यह कमांड्स एक-एक �
 # 1. सिस्टम अपडेट करें
 sudo apt update && sudo apt upgrade -y
 
-# 2. Node.js v20/v22 LTS इनस्टॉल करें
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# 2. Node.js 22 का signed NodeSource package repository जोड़ें
+sudo apt install -y ca-certificates curl gnupg
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+  | sudo gpg --dearmor --yes -o /etc/apt/keyrings/nodesource.gpg
+sudo chmod a+r /etc/apt/keyrings/nodesource.gpg
+gpg --show-keys --with-fingerprint /etc/apt/keyrings/nodesource.gpg
+```
+Fingerprint को NodeSource के official documentation में दिए fingerprint से मिलाएं। Match न हो तो आगे न बढ़ें। Match होने के बाद repository add करके Node.js install करें:
+```bash
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
+  | sudo tee /etc/apt/sources.list.d/nodesource.list
+sudo apt update
 sudo apt install -y nodejs git nginx
 
 # 3. PM2 (Process Manager) इनस्टॉल करें (सर्वर को 24/7 चालू रखने के लिए)
 sudo npm install -g pm2
 ```
 
-सत्यापित करें:
+सत्यापित करें। Node.js का major version `v22` होना चाहिए:
 ```bash
 node -v
 npm -v
@@ -78,9 +90,10 @@ pm2 -v
 
 ### विकल्प A: Git द्वारा (अनुशंसित)
 ```bash
-git clone <YOUR_GIT_REPO_URL> ~/skilldhan
+git clone https://github.com/OWNER/REPOSITORY.git ~/skilldhan
 cd ~/skilldhan
 ```
+`OWNER/REPOSITORY` को अपने GitHub owner और repository name से बदलें। Private repository के लिए EC2 पर read-only deploy key configure करें; personal access token को command, shell history, या guide में न डालें।
 
 ### विकल्प B: SCP द्वारा अपने कंप्यूटर से सीधे भेजें
 अपने स्थानीय कंप्यूटर (Windows) पर project के parent folder से चलाएं। `skilldhan-main` को अपने project folder के नाम से बदलें:
@@ -88,7 +101,7 @@ cd ~/skilldhan
 scp -i "your-key.pem" -r .\skilldhan-main ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu/skilldhan
 ```
 
-> **Download files:** `downloads/` folder को भी server पर रखें। Payment verify होने के बाद app यहीं के PDFs को secure download endpoint से सीधे customer के device पर भेजता है; Google Drive या public file link की जरूरत नहीं है।
+> **Download files:** `downloads/` folder की guide PDF और `full_kit.zip` दोनों files server पर रखें। Payment verify होने के बाद app इन्हें secure download endpoints से customer तक पहुंचाता है; Google Drive या public file link की जरूरत नहीं है।
 
 ---
 
@@ -97,7 +110,7 @@ scp -i "your-key.pem" -r .\skilldhan-main ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu
 सर्वर डायरेक्टरी में जाएं:
 ```bash
 cd ~/skilldhan
-npm install --production
+npm ci --omit=dev
 ```
 
 `.env` फाइल बनाएं। Production EC2 server के लिए **Live Mode** credentials ही रखें:
@@ -154,10 +167,10 @@ Orders अभी local `orders.json` में store होते हैं। P
 # PM2 से सर्वर स्टार्ट करें
 pm2 start ecosystem.config.js --env production
 
-# सर्वर रीबूट होने पर भी अपने आप चालू रखने के लिए
-pm2 save
+# सर्वर रीबूट पर PM2 चालू रखने के लिए, पहले नीचे दिखाई गई sudo command चलाएं
 pm2 startup
 # (जो कमांड टर्मिनल स्क्रीन पर दिखाए, उसे कॉपी करके चलाएं)
+pm2 save
 ```
 
 अब आपका नोड सर्वर बैकग्राउंड में पोर्ट `3000` पर 24/7 चालू रहेगा!
@@ -171,23 +184,28 @@ pm2 logs skilldhan
 
 ## 🤖 GitHub Actions से Automatic EC2 Deploy
 
-`.github/workflows/deploy-ec2.yml` में deploy workflow है। `main` branch पर push करने पर यह validate करता है, EC2 पर app files deploy करता है, production dependencies install करता है, PM2 reload करता है, और local health endpoint जांचता है। Checkout/payment secrets और `orders.json` archive में शामिल नहीं होते; EC2 की मौजूदा `.env` और orders file सुरक्षित रहती है। Pull requests पर production deploy नहीं चलता।
+`.github/workflows/deploy-ec2.yml` में deploy workflow है। **GitHub repository की `main` branch** पर push करने पर यह source validate करता है, EC2 पर app files copy करता है, production dependencies install करता है, PM2 reload करता है, और local health endpoint जांचता है। Checkout/payment secrets और `orders.json` archive में शामिल नहीं होते; EC2 की मौजूदा `.env` और orders file सुरक्षित रहती है। Pull requests पर production deploy नहीं चलता। पहली बार app files EC2 पर लाने के लिए Step 4 में **Git द्वारा clone** वाला तरीका इस्तेमाल करें; SCP-only upload से GitHub repository runner setup नहीं होता।
 
 यह setup EC2 पर **repository-scoped self-hosted GitHub Actions runner** का इस्तेमाल करता है, इसलिए GitHub-hosted runner के लिए SSH port खोलने की जरूरत नहीं है:
 
-1. GitHub repository में **Settings → Actions → Runners → New self-hosted runner** खोलें और Linux x64 चुनें।
-2. EC2 पर `ubuntu` user से दिए गए runner download/configure commands चलाएं। GitHub UI से fresh registration token लें; use के बाद वह expire हो जाता है। Runner को केवल इसी repository से जोड़ें, organization-wide न बनाएं, और service root के बजाय `ubuntu` user के रूप में चलाएं। Configure करते समय `skilldhan-prod` label add करें।
+1. GitHub repository में **Settings → Actions → Runners → New self-hosted runner** खोलें और Linux x64 चुनें। Runner files app directory से अलग रखें:
+   ```bash
+   mkdir -p ~/actions-runner
+   cd ~/actions-runner
+   ```
+2. GitHub UI से fresh runner download/configure commands लें और इसी `~/actions-runner` directory में `ubuntu` user से चलाएं। Registration token short-lived है; उसे chat, repository या `.env` में save न करें। Runner को केवल इसी repository से जोड़ें, organization-wide न बनाएं। GitHub के `config.sh` command में `--labels skilldhan-prod` जोड़ें। Configure करने के बाद runner को एक बार interactive तरीके से चला कर `Connected to GitHub` दिखने की पुष्टि करें, फिर `Ctrl+C` दबाकर रोकें।
 3. Runner service install/start करके status check करें:
    ```bash
+   cd ~/actions-runner
    sudo ./svc.sh install ubuntu
    sudo ./svc.sh start
    sudo ./svc.sh status
    ```
-4. EC2 पर project `/home/ubuntu/skilldhan` में हो, `.env` root directory में हो और `chmod 600 .env` set हो। `ubuntu` user को project, `.env`, `orders.json`, downloads, और PM2 process का owner रखें।
-5. EC2 पर Node.js 20+, npm, PM2 और `curl` installed हों। App को पहली बार manually start करें और PM2 startup (`pm2 startup`, फिर printed command) configure करके `pm2 save` करें।
+4. EC2 पर project `/home/ubuntu/skilldhan` में हो, `.env` root directory में हो और `chmod 600 .env` set हो। `ubuntu` user को project, `.env`, `orders.json`, downloads, और PM2 process का owner रखें। Runner उसी `ubuntu` user के रूप में चले; runner को `root` न बनाएं।
+5. EC2 पर Node.js 22, npm, PM2 और `curl` installed हों। App को पहली बार manually start करें और PM2 startup (`pm2 startup`, फिर printed `sudo` command) configure करके `pm2 save` करें। Server पर `node -v` से major version verify करें।
 6. GitHub repository में workflow enable करें। अब `main` पर push या **Actions → Deploy to EC2 → Run workflow** से deploy चलेगा। किसी और production branch का इस्तेमाल हो तो workflow trigger और `github.ref` condition दोनों update करें।
 
-Self-hosted runner trusted repository code चलाता है। Production deployment के लिए `main` पर merge access सिर्फ trusted maintainers को दें, workflow में untrusted pull request triggers न जोड़ें, और runner को root privileges न दें। Workflow failure पर GitHub Actions logs देखें; deploy होने के बाद health check fail हो तो `pm2 status` और `pm2 logs skilldhan` से जांचें।
+Self-hosted runner trusted repository code चलाता है। Production deployment के लिए `main` पर merge access सिर्फ trusted maintainers को दें, workflow में untrusted pull request triggers न जोड़ें, और runner को root privileges न दें। Workflow मौजूदा files overwrite करता है, पर failed deployment के बाद automatic rollback नहीं करता; production change से पहले backup रखें। Workflow failure पर GitHub Actions logs देखें; deploy होने के बाद health check fail हो तो `pm2 status` और `pm2 logs skilldhan` से जांचें।
 
 ---
 
@@ -311,7 +329,7 @@ Final config HTTP को canonical HTTPS domain पर redirect करता ह
 
 ## 💳 Step 9: Razorpay Webhook
 
-इस app में webhook signature वाला अलग webhook endpoint अभी उपलब्ध नहीं है। Razorpay Dashboard में webhook को `/api/verify-payment` पर configure **न करें**—यह route Checkout callback के लिए है। Payment verification app Razorpay API से server-side confirm करता है।
+इस app में Razorpay webhook के लिए अलग signature-verified endpoint नहीं है। Razorpay Dashboard में webhook URL के रूप में `/api/verify-payment` configure **न करें**—यह Checkout callback route है, webhook receiver नहीं। Payment verification Checkout callback के बाद Razorpay API से server-side होती है।
 
 ---
 
