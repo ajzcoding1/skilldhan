@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
-  <link rel="stylesheet" href="/css/style.css?v=20261104-live">
+  <link rel="stylesheet" href="/css/style.css?v=20261107-checkout">
 </head>
 <body style="background-color: var(--bg-primary);">
 
@@ -136,6 +136,11 @@
           </ul>
         </div>
 
+        <div class="checkout-delivery-note" role="note">
+          <strong>Digital product — no physical shipping</strong>
+          <span>Download access is provided after successful payment. No parcel or shipping fee applies.</span>
+        </div>
+
         <!-- Price Breakdown Table -->
         <table class="summary-table">
           <tr>
@@ -168,11 +173,20 @@
             Your download link(s) will appear on the confirmation page after payment.
           </div>
         </div>
+        <p class="checkout-policy">By placing your order, you agree to our <a href="/terms#refund-policy">return and refund policy</a>.</p>
 
       </div>
 
     </div>
   </div>
+
+  <footer class="checkout-footer">
+    <a href="/terms#refund-policy">Return &amp; refund policy</a>
+    <span aria-hidden="true">·</span>
+    <a href="/terms#digital-products">Digital delivery &amp; shipping</a>
+    <span aria-hidden="true">·</span>
+    <a href="/privacy">Privacy policy</a>
+  </footer>
 
   <!-- Demo Mode Payment Simulation Modal -->
   <div id="demo-payment-modal" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; padding:20px;">
@@ -201,6 +215,6 @@
   <!-- Analytics & Event Tracking -->
   <script src="/js/tracking.js"></script>
   <!-- Checkout Interaction Script -->
-  <script src="/js/checkout.js?v=20261104-live"></script>
+  <script src="/js/checkout.js?v=20261107-checkout"></script>
 </body>
 </html>

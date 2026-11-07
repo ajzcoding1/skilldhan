@@ -258,7 +258,7 @@ const PRODUCT_CONFIG = {
     price: Number(process.env.ORDER_BUMP_PRICE || '99')
   },
   support: {
-    email: process.env.SUPPORT_EMAIL || 'support@skilldhan.shop',
+    email: process.env.SUPPORT_EMAIL || 'shoppingdebraj@gmail.com',
     storeName: process.env.STORE_NAME || 'Skilldhan'
   },
   tracking: {

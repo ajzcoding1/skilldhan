@@ -1039,6 +1039,49 @@ h1, h2, h3, h4 {
   backdrop-filter: blur(12px);
 }
 
+.checkout-delivery-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-md);
+  background: rgba(16, 185, 129, 0.08);
+  color: #cbd5e1;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.checkout-delivery-note strong {
+  color: #34d399;
+}
+
+.checkout-policy {
+  margin-top: 16px;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.checkout-policy a,
+.checkout-footer a {
+  color: #a5b4fc;
+  text-underline-offset: 3px;
+}
+
+.checkout-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 16px 32px;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
 .form-group {
   margin-bottom: 20px;
 }

@@ -127,7 +127,7 @@ ORDER_BUMP_TITLE=🔥 Exclusive AI Prompt Vault (500+ Master Prompts)
 ORDER_BUMP_PRICE=99
 
 # Support details
-SUPPORT_EMAIL=support@skilldhan.shop
+SUPPORT_EMAIL=shoppingdebraj@gmail.com
 SUPPORT_WHATSAPP=+919876543210
 STORE_NAME=Skilldhan
 ```

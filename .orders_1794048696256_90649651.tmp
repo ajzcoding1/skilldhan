@@ -1,0 +1,18 @@
+[
+  {
+    "orderId": "order_demo_1794048696252_bce97c76",
+    "receiptId": "rcpt_48696246_fa6154",
+    "customer": {
+      "name": "ajz",
+      "email": "ajzcoding@gmail.com",
+      "phone": "8018606022"
+    },
+    "amount": 199,
+    "currency": "INR",
+    "includeBump": false,
+    "status": "pending",
+    "isDemoMode": true,
+    "paymentEnvironment": "non-production",
+    "createdAt": "2026-11-07T10:51:36.256Z"
+  }
+]
